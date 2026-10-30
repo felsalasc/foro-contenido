@@ -57,10 +57,10 @@
 
 **Interfaces:** GET/POST /api/categorias; GET/PUT/DELETE /api/categorias/{id}. CategoriaRequest(String nombre, String descripcion). Respuesta id, nombre, descripcion. Consulta autenticada; escritura solo ADMINISTRADOR. Nombre único sin distinguir mayúsculas y espacios exteriores, longitud 1–100; descripción hasta 500.
 
-- [ ] Escribir adminCreaCategoria201 y usuarioNoCreaCategoria403; ejecutar clase de prueba antes del controlador.
-- [ ] Implementar CRUD, DTO, permisos y errores. Normalizar nombre para unicidad sin perder acentos, con restricción equivalente en Oracle. Duplicado → 409; no existe → 404; inválido → 400; borrado válido → 204.
-- [ ] Añadir pruebas de listado, edición y borrado, duplicados normalizados y campos desconocidos. Sembrar cinco categorías en database/02_datos_demostracion.sql y probar conteo al cargar ese conjunto de datos.
-- [ ] Ejecutar .\mvnw.cmd test y registrar resultado; commit local.
+- [x] Escribir adminCreaCategoria201 y usuarioNoCreaCategoria403; ejecutar clase de prueba antes del controlador.
+- [x] Implementar CRUD, DTO, permisos y errores. Normalizar nombre para unicidad sin perder acentos, con restricción equivalente en Oracle. Duplicado → 409; no existe → 404; inválido → 400; borrado válido → 204.
+- [x] Añadir pruebas de listado, edición y borrado, duplicados normalizados y campos desconocidos. Sembrar cinco categorías en database/02_datos_demostracion.sql y probar conteo al cargar ese conjunto de datos.
+- [x] Ejecutar .\mvnw.cmd test y registrar resultado; commit local.
 
 ## Task 4: Temas y búsqueda
 

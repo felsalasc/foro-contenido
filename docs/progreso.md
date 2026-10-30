@@ -1,5 +1,7 @@
 # Progreso de Foro Contenido
 
+Estado vigente: Task 3 completada el 30 de octubre de 2026. Los apartados anteriores conservan la evidencia histórica de cada bloque.
+
 Plan: docs/plan-implementacion.md, Task 1: Base autónoma.
 
 Fecha: 29 de octubre de 2026. El usuario pide avanzar paso a paso y confirma dos repositorios separados, con alcance exclusivo de backend.
@@ -42,4 +44,22 @@ Pre-flight: consume la base de Task 1 y GET /api/auth/me definido en el contrato
 
 Task 2: complete. Código verificado con 36/36 pruebas y comunicación HTTP real entre JAR independientes. Commit local sin publicación. Oracle continúa pendiente.
 
-Tasks 3 a 6 pendientes. Próximo bloque: categorías y sus permisos administrativos.
+## Registro de Task 3
+
+Plan: docs/plan-implementacion.md, Task 3: Categorías. Base del bloque: b7412c3.
+
+Pre-flight: consume Identidad y seguridad de métodos de Task 2. Produce Categoria y su repositorio para la relación de temas de Task 4. No hay cambios de contrato HTTP ni dependencias de archivos de usuarios. La protección de categorías con temas se añade cuando exista esa relación, en Task 4.
+
+- Pruebas adminCreaCategoria201 y usuarioNoCreaCategoria403 ejecutadas antes del controlador: ambas fallaron por 404 en lugar de 201/403. Log: .verificacion/categorias-red.log. Contrato completo ejecutado antes de implementar: fallos por API, tabla y SQL ausentes; sin marcar ese resultado como verificación válida de funcionalidad.
+- CRUD en capas entidad, repositorio, DTO, servicio y controlador. Consulta autenticada; escritura protegida por ADMINISTRADOR. Respuestas 201 con Location, 200, 204, 400, 403, 404 y 409. Sin exponer entidad o clave interna.
+- Decisión técnica: CLAVE_NOMBRE almacena nombre.strip().toUpperCase(Locale.ROOT), con unique en la base y longitud 300 para expansiones Unicode. La escritura SQL manual debe conservar esa equivalencia. Los acentos siguen siendo significativos. La restricción de base protege duplicados simultáneos además de la comprobación previa.
+- SQL propio de estructura Oracle y cinco categorías, sin IDs de usuarios ni credenciales. La carga de prueba detectó caracteres alterados al usar la codificación predeterminada de Windows; lectura explícita UTF-8 corrigió la causa. README documenta UTF-8 también para el cliente SQL.
+- clean verify final: BUILD SUCCESS, código 0; 66 pruebas, 0 fallos, 0 errores, 0 omitidas. Distribución: AplicacionTest 1, IdentidadHttpTest 35, CategoriasApiTest 30. JAR generado. Log: .verificacion/categorias-verify.log.
+- Pruebas de CRUD/persistencia H2, límites y tipos JSON, ausencia de escrituras rechazadas, duplicados normalizados, edición sobre sí misma, dos creaciones simultáneas (201 y 409; un registro) y carga de cinco categorías con acentos correctos.
+- Revisión independiente en solo lectura: sin defectos funcionales concretos. Oracle queda para su verificación real; temas/comentarios y su integridad corresponden a los bloques siguientes. Los resultados de pruebas los verificó el implementador.
+- Integración real de los dos JAR: administrador inicial y usuario normal en usuarios; CRUD completo de categorías en contenido con los tokens respectivos. Se verificaron 201/Location, lectura y edición 200, eliminación 204 y consulta posterior 404, permiso 403, duplicado 409, campo extra 400, falta de token 401 y caída de usuarios 503. El script esperó a que terminara ApplicationRunner antes de iniciar sesión; el puerto abre antes del bootstrap. Contenido arrancó sin clave JWT. Procesos cerrados y secretos aleatorios solo en memoria.
+- Logs de integración: .verificacion/categorias-usuarios-http.log y .verificacion/categorias-contenido-http.log. Herramientas diagnósticas excluidas de Git.
+
+Task 3: complete. Evidencia: clean verify 66/66, CRUD HTTP entre JAR reales y revisión independiente. Commit local sin publicación. Oracle aún no comprobado.
+
+Tasks 4 a 6 pendientes. Próximo bloque: temas, autoría y búsqueda combinada.

@@ -4,7 +4,7 @@ Backend de contenido para el sistema de foros de DSY2205, Semana 2. Aplicación 
 
 ## Estado actual
 
-Base Maven y autenticación HTTP implementadas. Las rutas requieren Bearer y contenido consulta la identidad vigente en usuarios antes de ejecutarlas. Categorías, temas, comentarios y búsqueda se implementarán en los siguientes bloques. Todavía no hay endpoints de negocio: sin token `/` devuelve 401; con identidad válida llega al 404 de la ruta aún inexistente.
+Base Maven, autenticación HTTP y CRUD de categorías implementados. Las rutas requieren Bearer y contenido consulta la identidad vigente en usuarios antes de ejecutarlas. Temas, comentarios y búsqueda se implementarán en los siguientes bloques. Sin token `/` devuelve 401; con identidad válida devuelve 404 porque no hay controlador para esa ruta.
 
 Este repositorio contiene su propio pom.xml, Maven Wrapper, código, configuración y pruebas. No existe un proyecto padre del foro ni una dependencia Java o Maven hacia foro-usuarios. Se compila y arranca por separado.
 
@@ -89,11 +89,39 @@ USUARIOS_BASE_URL debe ser una URL HTTP o HTTPS sin credenciales, query ni fragm
 
 Cada petición vuelve a consultar usuarios. Los cambios de rol y la desactivación de cuentas se reflejan sin esperar a que expire el token. La API usa autenticación stateless; no hay sesiones, cookies de autenticación, formulario ni HTTP Basic. La cuenta en memoria predeterminada de Spring Boot está deshabilitada. No se configura CORS abierto; el alcance sigue siendo solo backend.
 
+## Categorías
+
+Todas las operaciones requieren un token vigente emitido por usuarios.
+
+| Método y ruta | Permiso | Respuesta correcta |
+|---|---|---|
+| GET /api/categorias | Usuario o administrador | 200, lista ordenada por ID ascendente; [] si está vacía |
+| GET /api/categorias/{id} | Usuario o administrador | 200, categoría |
+| POST /api/categorias | Administrador | 201, categoría y Location |
+| PUT /api/categorias/{id} | Administrador | 200, categoría actualizada |
+| DELETE /api/categorias/{id} | Administrador | 204, sin cuerpo |
+
+POST y PUT reciben el mismo JSON; PUT reemplaza nombre y descripción:
+
+```json
+{"nombre":"Programación","descripcion":"Consultas sobre Java y algoritmos"}
+```
+
+Nombre obligatorio de 1 a 100 caracteres después de quitar espacios exteriores. Descripción opcional de hasta 500 caracteres; omitida, null o en blanco se guarda como null. Las respuestas contienen solo id, nombre y descripcion. Campos desconocidos y tipos incorrectos producen 400. Un ID debe ser entero positivo; categoría inexistente produce 404. Los cambios requieren rol ADMINISTRADOR (403 para USUARIO).
+
+Los nombres son únicos sin distinguir mayúsculas ni espacios exteriores, conservando acentos: ` programación ` duplica `Programación`, pero `Programacion` es diferente. Una clave interna con mayúsculas Locale.ROOT y restricción única protege también escrituras simultáneas; el duplicado produce 409. No se expone esa clave por HTTP.
+
+Scripts propios en [database/01_estructura.sql](database/01_estructura.sql) y [database/02_datos_demostracion.sql](database/02_datos_demostracion.sql). Abrirlos como **UTF-8** en el cliente SQL. Ejecutar primero la estructura y luego los datos, una sola vez sobre la tabla vacía del esquema exclusivo de contenido. El segundo script inserta cinco categorías con IDs generados; no requiere IDs de usuarios. Mantener CLAVE_NOMBRE coherente con la normalización documentada al cargar SQL manualmente. No se cargan automáticamente al arrancar; el perfil local usa H2 en memoria y pierde sus datos al reiniciar.
+
+Los scripts están preparados para Oracle, pero todavía no se han ejecutado allí. La regla que impide borrar categorías con temas se incorpora al implementar la relación con temas en el próximo bloque.
+
 ## Pruebas y documentación
 
 `AplicacionTest` activa local, inicia el contexto real y verifica SELECT 1 mediante JDBC contra H2. Los informes están en target/surefire-reports; clean verify genera el JAR ejecutable propio.
 
 `IdentidadHttpTest` usa un servidor HTTP local de prueba en un puerto libre, servicios reales y H2. Comprueba identidad válida, rechazo de tokens, permisos, cambios de rol, redirecciones, demoras de cabeceras/cuerpo, caída de conexión y JSON inválido. Un controlador y una tabla exclusivos de test permiten verificar que las operaciones rechazadas no escriben datos; no forman parte del JAR ni del esquema Oracle. La suite no requiere que el otro repositorio exista o esté iniciado.
+
+`CategoriasApiTest` comprueba CRUD con JPA y H2, permisos mediante identidad HTTP, validación JSON, duplicados y creaciones concurrentes. También carga el SQL de demostración como UTF-8 y verifica las cinco categorías y sus acentos. Último clean verify: 66 pruebas aprobadas (1 de aplicación, 35 de identidad y 30 de categorías).
 
 - [Diseño y separación de servicios](docs/diseno.md).
 - [Contrato HTTP de identidad](docs/contrato-identidad.md).
