@@ -4,7 +4,7 @@ Backend de contenido para el sistema de foros de DSY2205, Semana 2. Aplicación 
 
 ## Estado actual
 
-Base Maven, autenticación HTTP, CRUD de categorías y temas, y búsqueda implementados. Las rutas requieren Bearer y contenido consulta la identidad vigente en usuarios antes de ejecutarlas. Comentarios se incorporarán en el siguiente bloque. Sin token `/` devuelve 401; con identidad válida devuelve 404 porque no hay controlador para esa ruta.
+Autenticación HTTP, CRUD de categorías, temas y comentarios, búsqueda y eliminación transaccional de temas con comentarios implementados. Las rutas requieren Bearer y contenido consulta la identidad vigente en usuarios antes de ejecutarlas. Pendientes: Oracle real, Postman y evidencia de entrega. Sin token `/` devuelve 401; con identidad válida devuelve 404 porque no hay controlador para esa ruta.
 
 Este repositorio contiene su propio pom.xml, Maven Wrapper, código, configuración y pruebas. No existe un proyecto padre del foro ni una dependencia Java o Maven hacia foro-usuarios. Se compila y arranca por separado.
 
@@ -67,7 +67,7 @@ $env:ORACLE_PASSWORD = $taskCredential.GetNetworkCredential().Password
 Remove-Item Env:ORACLE_PASSWORD
 ```
 
-Servicio, ruta y usuario del ejemplo deben ajustarse a la instancia real. Oracle usa ddl-auto=validate y no ejecuta scripts automáticamente. Los scripts de database/ incluyen categorías y temas; se ampliarán con comentarios en el siguiente bloque. La conexión Oracle está pendiente de comprobación.
+Servicio, ruta y usuario del ejemplo deben ajustarse a la instancia real. Oracle usa ddl-auto=validate y no ejecuta scripts automáticamente. Los scripts de database/ incluyen categorías, temas y comentarios. La conexión Oracle está pendiente de comprobación.
 
 No hay valores predeterminados de credenciales Oracle. Spring Boot no carga archivos .env automáticamente. Wallet, variables privadas y certificados quedan fuera de Git y de la entrega.
 
@@ -139,7 +139,43 @@ Enviar autorId, fechaCreacion, id u otros campos desconocidos produce 400. Un te
 
 Para buscar: `GET /api/temas?texto=java&categoriaId=1`. Ambos filtros son opcionales y se combinan con AND. El texto busca una subcadena sin distinguir mayúsculas en título o contenido completo; conserva los acentos y trata `%`, `_` y `!` como caracteres literales. Codificar los parámetros en la URL mediante el cliente HTTP. Texto ausente o en blanco no filtra; categoriaId inexistente devuelve `[]`, al igual que cualquier búsqueda sin resultados. El orden siempre es fechaCreacion descendente y, en empate, id descendente. Se devuelve la lista completa, sin paginación en este alcance.
 
-El SQL de estructura incluye TEMAS con contenido CLOB, clave foránea a CATEGORIAS y AUTOR_ID sin relación SQL con usuarios. Las operaciones SQL LOWER y LIKE sobre CLOB se eligen según la [documentación de Oracle](https://docs.oracle.com/en/database/oracle/oracle-database/21/adlob/supported-functions-and-operators.html). La búsqueda se probó en H2 incluso después del carácter 9500; su compatibilidad y persistencia reales en Oracle todavía requieren verificación. Los datos de temas y comentarios se incorporarán juntos y con autores parametrizados en el siguiente bloque.
+El SQL de estructura incluye TEMAS con contenido CLOB, clave foránea a CATEGORIAS y AUTOR_ID sin relación SQL con usuarios. Las operaciones SQL LOWER y LIKE sobre CLOB se eligen según la [documentación de Oracle](https://docs.oracle.com/en/database/oracle/oracle-database/21/adlob/supported-functions-and-operators.html). La búsqueda se probó en H2 incluso después del carácter 9500; su compatibilidad y persistencia reales en Oracle todavía requieren verificación.
+
+## Comentarios y eliminación de temas
+
+Todas las rutas requieren identidad vigente. USUARIO y ADMINISTRADOR pueden comentar y consultar; solo el autor del comentario lo edita o elimina. El dueño del tema y un administrador ajeno no adquieren permiso sobre ese comentario.
+
+| Método y ruta | Resultado correcto |
+|---|---|
+| POST /api/temas/{temaId}/comentarios | 201, comentario y Location |
+| GET /api/temas/{temaId}/comentarios | 200, lista del tema ordenada por fecha e ID ascendentes |
+| GET /api/comentarios/{id} | 200, comentario |
+| PUT /api/comentarios/{id} | 200, comentario actualizado por su autor |
+| DELETE /api/comentarios/{id} | 204, sin cuerpo; solo su autor |
+
+POST y PUT reciben exclusivamente:
+
+```json
+{"contenido":"Podríamos separar el contrato de su implementación."}
+```
+
+Contenido obligatorio, no blanco, de hasta 2000 caracteres; se conservan sus espacios y saltos de línea. La respuesta contiene id, contenido, temaId, autorId y fechaCreacion. El autor proviene de la identidad HTTP. El tema se toma de la ruta al crear y no se puede cambiar al editar; autor y fecha UTC con microsegundos también son inmutables. Campos desconocidos o tipos inválidos producen 400; incluye intentar enviar temaId o autorId en el JSON.
+
+Un tema existente sin comentarios devuelve `[]`; tema o comentario inexistente produce 404. ID inválido produce 400. Modificar un comentario ajeno produce 403 sin cambiarlo ni borrarlo. Eliminar un comentario conserva el tema.
+
+DELETE /api/temas/{id}, autorizado exclusivamente a su autor, elimina el tema y todos sus comentarios mediante ON DELETE CASCADE en la misma transacción. Esto incluye los comentarios de otros autores que pertenecen al tema eliminado. Un borrado rechazado o fallido conserva los datos. Publicar, editar o borrar un comentario y eliminar su tema se coordinan bloqueando la fila del tema durante la escritura. No hay relación Java bidireccional ni entidades expuestas en JSON.
+
+## Datos de demostración
+
+En el esquema Oracle exclusivo de contenido, usar un cliente configurado para **UTF-8** y ejecutar en este orden:
+
+1. [01_estructura.sql](database/01_estructura.sql): crea CATEGORIAS, TEMAS y COMENTARIOS con sus claves e índices. Ejecutar sobre un esquema sin esas tablas; no realiza migraciones de una estructura previa.
+2. [02_datos_demostracion.sql](database/02_datos_demostracion.sql): inserta cinco categorías, una sola vez sobre la tabla vacía.
+3. [02b_temas_comentarios_demostracion.sql](database/02b_temas_comentarios_demostracion.sql): en SQLcl o SQL*Plus, solicita los IDs numéricos reales de un administrador activo y dos usuarios activos distintos. Inserta tres temas y tres comentarios; ejecutarlo una sola vez con TEMAS y COMENTARIOS vacías.
+
+Obtener los IDs mediante GET /api/usuarios como administrador o GET /api/auth/me de cada cuenta en foro-usuarios. El script no consulta tablas de usuarios, no contiene contraseñas y no presupone IDs 1/2/3. Verificar esas cuentas antes de cargar; al no existir FK entre servicios, el esquema de contenido no comprueba sus roles o estado por SQL. Los vínculos de categorías y temas usan los IDs generados por la base. La carga 02b aborta con rollback si ocurre un error SQL en el cliente indicado.
+
+La prueba automatizada carga el SQL de datos en H2 con IDs simulados 41/73/109 y valida cantidades y relaciones. La integración HTTP de los JAR creó tres cuentas reales y dejó cinco categorías, tres temas y tres comentarios con sus IDs reales. La ejecución de los scripts y persistencia en Oracle siguen pendientes. Para demostrar eliminaciones sin quedar bajo los mínimos, crear registros adicionales para esas operaciones.
 
 ## Pruebas y documentación
 
@@ -150,6 +186,8 @@ El SQL de estructura incluye TEMAS con contenido CLOB, clave foránea a CATEGORI
 `CategoriasApiTest` comprueba CRUD con JPA y H2, permisos mediante identidad HTTP, validación JSON, duplicados y creaciones concurrentes. También carga el SQL de demostración como UTF-8 y verifica las cinco categorías y sus acentos.
 
 `TemasApiTest` comprueba CRUD, autoría e inmutabilidad de autor/fecha, búsquedas combinadas y literales, contenido CLOB largo, categorías en uso y carreras con borrado de categoría. La suite usa un servidor HTTP de identidad de prueba y no necesita el servicio real de usuarios ni su repositorio. Los resultados de la última ejecución se registran en docs/verificacion.md.
+
+`ComentariosApiTest` verifica CRUD, autoría, restricciones del dueño del tema/administrador ajenos, inmutabilidad, orden, cascada y rollback de un borrado fallido. Incluye publicación concurrente con un borrado pendiente del tema. `DatosDemostracionTest` carga el conjunto SQL y verifica cinco categorías, tres temas y tres comentarios con autores parametrizados. Último clean verify: 138 pruebas aprobadas.
 
 - [Diseño y separación de servicios](docs/diseno.md).
 - [Contrato HTTP de identidad](docs/contrato-identidad.md).

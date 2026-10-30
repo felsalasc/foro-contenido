@@ -80,11 +80,11 @@
 
 **Interfaces:** GET/POST /api/temas/{temaId}/comentarios; GET/PUT/DELETE /api/comentarios/{id}. ComentarioRequest(String contenido), respuesta id, contenido, temaId, autorId, fechaCreacion. Contenido 1–2000, no blanco. Al listar orden fechaCreacion ASC, id ASC. El tema es inmutable al editar un comentario.
 
-- [ ] Escribir comentaTemaExistenteConAutorAutenticado, autorTemaNoEditaComentarioAjeno y borrarTemaEliminaSusComentarios; ejecutar antes de implementar.
-- [ ] Implementar CRUD de comentarios, permisos por autor y 404 de relaciones ausentes; edición no acepta temaId ni autorId del body. Usuario o administrador solo modifican sus propios comentarios.
-- [ ] Implementar eliminación transaccional de tema y sus comentarios, con integridad referencial; añadir borrarTemaAjenoNoBorraComentarios, comentarioVacioEs400, comentarioLargoEs400, borrarComentarioAjenoEs403 y temaInexistenteAlComentarEs404.
-- [ ] Cargar al menos tres temas y tres comentarios con autores reales del conjunto de usuarios. Los scripts usan ids de autores como parámetros; no suponen que la secuencia de usuarios empiece en 1.
-- [ ] Ejecutar .\mvnw.cmd clean verify y registrar resultado; commit local.
+- [x] Escribir comentaTemaExistenteConAutorAutenticado, autorTemaNoEditaComentarioAjeno y borrarTemaEliminaSusComentarios; ejecutar antes de implementar.
+- [x] Implementar CRUD de comentarios, permisos por autor y 404 de relaciones ausentes; edición no acepta temaId ni autorId del body. Usuario o administrador solo modifican sus propios comentarios.
+- [x] Implementar eliminación transaccional de tema y sus comentarios, con integridad referencial; añadir borrarTemaAjenoNoBorraComentarios, comentarioVacioEs400, comentarioLargoEs400, borrarComentarioAjenoEs403 y temaInexistenteAlComentarEs404.
+- [x] Cargar al menos tres temas y tres comentarios con autores reales del conjunto de usuarios. Los scripts usan ids de autores como parámetros; no suponen que la secuencia de usuarios empiece en 1.
+- [x] Ejecutar .\mvnw.cmd clean verify y registrar resultado; commit local.
 
 ## Task 6: Oracle, integración y entrega verificable
 

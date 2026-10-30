@@ -1,6 +1,6 @@
 # Verificación de la base de Foro Contenido
 
-Actualizado: 30 de octubre de 2026. Alcance: Tasks 1 a 4 del plan. Se conserva la evidencia histórica de cada bloque. No constituye aún el desarrollo funcional completo del foro ni acredita Oracle.
+Actualizado: 30 de octubre de 2026. Alcance: Tasks 1 a 5 del plan. Las funciones locales del backend están implementadas; la integración con persistencia Oracle, Postman y evidencia de entrega siguen pendientes. Se conserva la evidencia histórica de cada bloque.
 
 | Comprobación | Resultado observado |
 |---|---|
@@ -43,7 +43,7 @@ Las pruebas Maven se ejecutaron con permisos autorizados por las restricciones d
 
 ## Pendientes
 
-Comentarios, datos de temas/comentarios con autores reales, colección Postman y conexión/verificación Oracle. No se implementa frontend.
+Colección Postman, ejecución SQL y conexión/verificación Oracle, integración con persistencia real y evidencia de entrega. No se implementa frontend.
 
 ## Verificación de identidad HTTP
 
@@ -128,3 +128,32 @@ La primera ejecución completa detectó una carrera (POST 201 y DELETE 204). Una
 La primera integración HTTP también detectó fracciones de segundo diferentes entre el objeto recién creado y el registro leído. Una prueba de API reprodujo la diferencia; generar la fecha con precisión de microsegundos la corrigió. La segunda integración verificó igualdad exacta entre las respuestas de creación y edición.
 
 Logs locales: .verificacion/temas-red.log, .verificacion/temas-carrera-diagnostico.log, .verificacion/temas-carrera-red.log, .verificacion/temas-fecha-red.log, .verificacion/temas-verify.log, .verificacion/temas-usuarios-http.log y .verificacion/temas-contenido-http.log. Todos ignorados por Git. Los procesos de integración se cerraron y los secretos temporales no se guardaron. Usuarios permanece sin cambios; contenido conserva construcción y repositorio propios.
+
+## Verificación de comentarios y datos de demostración
+
+| Comprobación | Resultado observado |
+|---|---|
+| Pruebas previas a implementación | 32 casos; 28 fallos por rutas ausentes, 0 errores |
+| Suite final | clean verify: BUILD SUCCESS, código 0; 138 aprobadas, 0 fallos/errores/omitidas |
+| Distribución | Aplicación 1, identidad 35, categorías 30, temas 39, comentarios 32, datos 1 |
+| CRUD | Crear 201/Location, consultar/listar/editar 200, borrar 204 y consulta posterior 404 |
+| Propiedad | Solo autor modifica; dueño del tema y administrador ajenos reciben 403 |
+| Inmutabilidad | Autor, tema y fecha conservados; intentos de cambiarlos por JSON producen 400 |
+| Contenido | No blanco, máximo 2000; rechaza tipos incorrectos y campos desconocidos |
+| Listado | Solo del tema indicado, fecha ASC e ID ASC; [] si existe sin comentarios |
+| Borrado de tema | Elimina sus comentarios, incluidos autores distintos; conserva otros temas y sus comentarios |
+| Borrado ajeno | 403 sin eliminar comentarios |
+| Atomicidad ante fallo | FK auxiliar de test impide eliminar tema; tema y comentarios permanecen tras 409 |
+| Concurrencia | Borrado pendiente del tema coordinado con publicación, sin comentarios huérfanos |
+| SQL de datos en H2 | 5 categorías, 3 temas y 3 comentarios; autores 41/73/109 parametrizados y relaciones correctas |
+| Dataset por HTTP real | 3 cuentas activas reales, 5 categorías, 3 temas y 3 comentarios después del CRUD |
+| Integración JAR | CRUD, permisos, inmutabilidad, cascada y rechazo 503 al detener usuarios |
+| Separación | JAR propio; contenido no recibió clave JWT ni consultó tablas de usuarios |
+| Revisión independiente | Sin defectos concretos de Task 5 por inspección estática |
+| Oracle | Esquema y datos preparados; ejecución de scripts, búsqueda, concurrencia y persistencia reales pendientes |
+
+La prueba de datos lee los archivos UTF-8, sustituye los parámetros de autores por IDs simulados y retira WHENEVER/ACCEPT para ejecutar las sentencias SQL en H2. No verifica los comandos del cliente Oracle. La integración de JAR usa tres cuentas reales y sus IDs devueltos por HTTP; carga los datos a través de las API y comprueba los mínimos después de operar sobre un cuarto tema temporal. Estos dos resultados son complementarios y no acreditan persistencia Oracle.
+
+El borrado en cascada se verifica con datos persistidos reales de H2, incluyendo comentarios de otros autores y de otro tema. Una referencia auxiliar exclusiva de test provoca un fallo de base y permite comprobar rollback. El esquema de producción contiene únicamente CATEGORIAS, TEMAS y COMENTARIOS; no incluye esa tabla de prueba.
+
+La integración arrancó ambos JAR por separado, con claves/contraseñas aleatorias solo en memoria. Contenido recibió exclusivamente la URL de usuarios. Los procesos se cerraron y los logs no contienen tokens o contraseñas. Evidencia local: .verificacion/comentarios-red.log, .verificacion/datos-demo-red.log, .verificacion/comentarios-verify.log, .verificacion/comentarios-usuarios-http.log y .verificacion/comentarios-contenido-http.log. Informes JUnit en target/surefire-reports/; todo diagnóstico excluido de Git.

@@ -1,6 +1,6 @@
 # Progreso de Foro Contenido
 
-Estado vigente: Task 4 completada el 30 de octubre de 2026. Los apartados anteriores conservan la evidencia histórica de cada bloque.
+Estado vigente: Task 5 completada el 30 de octubre de 2026. Los apartados anteriores conservan la evidencia histórica de cada bloque.
 
 Plan: docs/plan-implementacion.md, Task 1: Base autónoma.
 
@@ -82,4 +82,25 @@ Pre-flight: consume Identidad de Task 2 y Categoria de Task 3; produce Tema para
 
 Task 4: complete. Evidencia: clean verify 105/105, integración HTTP real y revisión independiente. Commit local sin publicación. Oracle no se presenta como verificado.
 
-Tasks 5 y 6 pendientes. Próximo bloque: comentarios y eliminación transaccional del tema con sus comentarios.
+## Registro de Task 5
+
+Plan: docs/plan-implementacion.md, Task 5: Comentarios y reglas de eliminación. Base del bloque: 62bd33b. Se continúa en desarrollo dentro del repositorio independiente existente; usuarios no se modifica.
+
+Pre-flight: consume Identidad, Tema y la seguridad existentes; produce comentarios y completa el borrado de temas con sus comentarios. Todas las escrituras de comentarios y el borrado del tema coordinan la misma fila de tema. El SQL de datos usa parámetros de autores sin acceso al esquema de usuarios.
+
+- ComentariosApiTest escrito y ejecutado antes de implementar: 32 casos, 28 fallos esperados por rutas ausentes y 0 errores. comentaTemaExistenteConAutorAutenticado esperaba 201 y recibió 404; los casos de propiedad y cascada también fallaron al intentar crear el comentario. Log: .verificacion/comentarios-red.log.
+- CRUD de comentarios con entidad, repositorio, DTO, servicio y controlador propios. Contenido obligatorio no blanco de hasta 2000, autor exclusivamente de identidad HTTP, tema tomado de la ruta; autor, tema y fecha inmutables al editar. Se conservan espacios/saltos de línea; fecha generada en UTC con microsegundos.
+- Consulta autenticada; modificación directa solo por autor. El dueño del tema y un administrador ajeno reciben 403 al editar/borrar comentarios. Un administrador sí gestiona sus propios comentarios. Listado solo del tema solicitado, fecha ASC e ID ASC; tema existente vacío devuelve [], relaciones ausentes 404 e ID/JSON inválidos 400.
+- Decisión técnica: comentario con CLOB para conservar texto Unicode sin depender del límite de bytes de VARCHAR2. FK_COMENTARIOS_TEMA con ON DELETE CASCADE tanto en SQL como en el esquema Hibernate local mediante OnDelete. TemaService exige autor antes de borrar. La base elimina tema e hijos en una misma sentencia/transacción; no se agrega una colección bidireccional a Tema.
+- Coordinación de escritura: PESSIMISTIC_WRITE sobre el tema al crear/editar/borrar comentarios y al borrar el tema. Para editar/borrar comentario se obtiene primero una proyección de temaId, se toma el bloqueo y recién se carga el comentario, evitando una entidad obsoleta en el contexto de persistencia. Coste: escrituras sobre comentarios del mismo tema se serializan brevemente; la autenticación HTTP ocurre antes de la transacción.
+- Se probaron comentarios de varios autores, conservación de comentarios de otros temas, borrado ajeno sin efectos, rollback del tema y comentarios ante una FK adicional exclusiva de test que impide borrar, y publicación con eliminación JDBC pendiente sin comentarios huérfanos. No se añadieron rutas o tablas de diagnóstico al producto.
+- DatosDemostracionTest escrito y ejecutado antes del nuevo script: error esperado por archivo 02b inexistente. Luego se creó 02b_temas_comentarios_demostracion.sql con IDs solicitados por ACCEPT NUMBER en SQLcl/SQL*Plus; no asume 1/2/3. Se ejecuta tras cinco categorías y con tablas de temas/comentarios vacías. El cliente aborta con rollback ante error SQL.
+- Prueba del SQL de datos sobre H2: sustituye únicamente parámetros y retira directivas del cliente Oracle; usa IDs simulados 41/73/109 y comprueba cinco categorías, tres temas, tres comentarios, autores y relaciones. No se presenta ese resultado como ejecución de SQLcl ni de Oracle.
+- Verificación final: clean verify, BUILD SUCCESS, código 0; 138 pruebas, 0 fallos, 0 errores, 0 omitidas. AplicacionTest 1, IdentidadHttpTest 35, CategoriasApiTest 30, TemasApiTest 39, ComentariosApiTest 32 y DatosDemostracionTest 1. JAR propio generado. Log: .verificacion/comentarios-verify.log.
+- Revisión independiente estática: sin defectos concretos en Task 5. Ejecución de TDD e integración acreditadas por el implementador; Oracle no acreditado.
+- Integración real de ambos JAR con H2: administrador inicial y dos usuarios normales registrados/iniciados por HTTP; IDs obtenidos por me, sin asumir valores. Se cargaron cinco categorías, tres temas y tres comentarios con autores reales. Un cuarto tema temporal permitió probar edición/borrado de comentario propio, rechazo 403 a dueño del tema y administrador ajenos, suplantación 400, fecha inmutable y cascada al borrar el tema. Los mínimos 3/5/3/3 se comprobaron después del CRUD. Usuarios detenido produjo 503 antes de comentar.
+- Contenido se inició sin JWT_SECRET_BASE64; procesos cerrados al terminar y secretos aleatorios únicamente en memoria. Logs: .verificacion/comentarios-usuarios-http.log y .verificacion/comentarios-contenido-http.log. Scripts/logs diagnósticos permanecen fuera de Git.
+
+Task 5: complete. Evidencia: clean verify 138/138, carga de datos SQL sobre H2, dataset con cuentas reales por HTTP, CRUD/cascada entre JAR y revisión independiente. Commit local sin publicación. Oracle sigue pendiente de ejecución real.
+
+Task 6 pendiente: Oracle, Postman, integración con persistencia real y evidencia de entrega. Sin frontend y sin publicación automática.

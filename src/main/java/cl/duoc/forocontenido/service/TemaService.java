@@ -53,8 +53,10 @@ public class TemaService {
 
     @Transactional
     public void eliminar(Long id, Long autorId) {
-        var tema = buscarTema(id);
+        validarId(id);
+        var tema = temas.buscarConBloqueo(id).orElseThrow(() -> new RecursoNoEncontradoException("Tema no encontrado"));
         exigirAutor(tema, autorId);
+        // La FK elimina los comentarios en la misma sentencia/transacción.
         temas.delete(tema);
         temas.flush();
     }
