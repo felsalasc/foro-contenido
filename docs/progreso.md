@@ -1,6 +1,6 @@
 # Progreso de Foro Contenido
 
-Estado vigente: Task 3 completada el 30 de octubre de 2026. Los apartados anteriores conservan la evidencia histórica de cada bloque.
+Estado vigente: Task 4 completada el 30 de octubre de 2026. Los apartados anteriores conservan la evidencia histórica de cada bloque.
 
 Plan: docs/plan-implementacion.md, Task 1: Base autónoma.
 
@@ -62,4 +62,24 @@ Pre-flight: consume Identidad y seguridad de métodos de Task 2. Produce Categor
 
 Task 3: complete. Evidencia: clean verify 66/66, CRUD HTTP entre JAR reales y revisión independiente. Commit local sin publicación. Oracle aún no comprobado.
 
-Tasks 4 a 6 pendientes. Próximo bloque: temas, autoría y búsqueda combinada.
+## Registro de Task 4
+
+Plan: docs/plan-implementacion.md, Task 4: Temas y búsqueda. Base del bloque: 4b2f282. Ejecución directa en el repositorio existente, sin modificar usuarios.
+
+Pre-flight: consume Identidad de Task 2 y Categoria de Task 3; produce Tema para los comentarios de Task 5. No modifica el contrato de identidad ni agrega dependencias Maven de otros repositorios. Los datos de temas y comentarios parametrizados con autores reales se preparan juntos en Task 5, como indica el plan.
+
+- TemasApiTest escrito antes de la implementación y ejecutado: 37 casos, fallos esperados por rutas de temas y tabla inexistentes. usuarioPublicaTemaConSuIdentidad recibió 404 en lugar de 201; buscaPorTextoYCategoria no pudo crear el tema inicial. Log: .verificacion/temas-red.log.
+- CRUD de temas con DTO; autor asignado desde Identidad y autor/fecha inmutables. Solo el autor edita o elimina, aunque la otra cuenta sea administradora. Título 1–200, contenido no blanco de hasta 10000, categoría positiva obligatoria y existente. Validación estricta rechaza autorId/fechaCreacion/id del body.
+- Búsqueda opcional por título/contenido sin distinguir mayúsculas, con AND de categoría; texto vacío no filtra. Escape de !, % y _ como literales. Orden fecha DESC e ID DESC. Categoría inexistente como filtro devuelve []; para crear o editar devuelve 404.
+- Decisión técnica: contenido CLOB con consultas SQL nativas LOWER/LIKE, sin convertir ni truncar el texto. Documentación Oracle enlazada en README admite esas operaciones; la comprobación real en Oracle permanece pendiente. H2 verificó coincidencias después del carácter 9500 y contenido de 10000 caracteres acentuados.
+- Se agregó FK_TEMAS_CATEGORIA y su índice; categoría con temas produce 409. Una primera carrera dio POST 201 y DELETE 204. La traza SQL confirmó la presencia de la FK; una prueba controlada con borrado JDBC pendiente reprodujo publicación 201 pese al borrado posterior. La causa fue confiar solo en comprobaciones previas/FK bajo esa concurrencia en H2.
+- Corrección de concurrencia: crear/mover tema y eliminar categoría adquieren PESSIMISTIC_WRITE sobre la misma categoría hasta el commit. Prueba borradoPendienteImpidePublicarEnCategoriaEliminada RED→GREEN, además de carreraPublicacionYBorradoNoDejaHuerfanos. La FK permanece como garantía adicional. Coste: las publicaciones o cambios que usan una misma categoría se serializan durante esa breve transacción; la llamada HTTP de identidad ocurre antes de ella.
+- La integración con JAR detectó un cambio de precisión entre la fecha recién creada y su lectura. Se reprodujo en fechaCreacionNoCambiaEntrePublicacionConsultaYEdicion: fracción de segundo .8665338Z frente a .866534Z. Se ajustó la generación UTC a microsegundos, igual a TIMESTAMP(6). Prueba RED→GREEN y coincidencia exacta en HTTP al crear/consultar/editar.
+- Verificación final: clean verify, BUILD SUCCESS, código 0; 105 pruebas, 0 fallos, 0 errores, 0 omitidas. AplicacionTest 1, IdentidadHttpTest 35, CategoriasApiTest 30, TemasApiTest 39. JAR propio generado. Log: .verificacion/temas-verify.log.
+- Revisión independiente estática: sin defectos concretos de Task 4. La ejecución de pruebas y el historial RED/GREEN los comprobó el implementador; Oracle queda pendiente. Los dos defectos detectados ejecutando las pruebas fueron corregidos con reproducción y suite completa.
+- Integración de ambos JAR reales en loopback: registro/login y administrador inicial en usuarios; categoría, publicación, consulta, búsqueda combinada sobre CLOB largo y edición/eliminación por el autor. Administrador ajeno recibe 403, categoría en uso 409, autorId falsificado 400, tema eliminado 404 y usuarios detenido 503 sin ejecutar publicación. Fecha exacta conservada. Contenido no recibió clave JWT. Todos los procesos se cerraron; contraseñas/tokens aleatorios solo en memoria.
+- Logs diagnósticos locales: .verificacion/temas-red.log, temas-carrera-diagnostico.log, temas-carrera-red.log, temas-fecha-red.log, temas-verify.log, temas-usuarios-http.log y temas-contenido-http.log. Se mantienen fuera de Git.
+
+Task 4: complete. Evidencia: clean verify 105/105, integración HTTP real y revisión independiente. Commit local sin publicación. Oracle no se presenta como verificado.
+
+Tasks 5 y 6 pendientes. Próximo bloque: comentarios y eliminación transaccional del tema con sus comentarios.

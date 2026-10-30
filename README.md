@@ -4,7 +4,7 @@ Backend de contenido para el sistema de foros de DSY2205, Semana 2. Aplicación 
 
 ## Estado actual
 
-Base Maven, autenticación HTTP y CRUD de categorías implementados. Las rutas requieren Bearer y contenido consulta la identidad vigente en usuarios antes de ejecutarlas. Temas, comentarios y búsqueda se implementarán en los siguientes bloques. Sin token `/` devuelve 401; con identidad válida devuelve 404 porque no hay controlador para esa ruta.
+Base Maven, autenticación HTTP, CRUD de categorías y temas, y búsqueda implementados. Las rutas requieren Bearer y contenido consulta la identidad vigente en usuarios antes de ejecutarlas. Comentarios se incorporarán en el siguiente bloque. Sin token `/` devuelve 401; con identidad válida devuelve 404 porque no hay controlador para esa ruta.
 
 Este repositorio contiene su propio pom.xml, Maven Wrapper, código, configuración y pruebas. No existe un proyecto padre del foro ni una dependencia Java o Maven hacia foro-usuarios. Se compila y arranca por separado.
 
@@ -67,7 +67,7 @@ $env:ORACLE_PASSWORD = $taskCredential.GetNetworkCredential().Password
 Remove-Item Env:ORACLE_PASSWORD
 ```
 
-Servicio, ruta y usuario del ejemplo deben ajustarse a la instancia real. Oracle usa ddl-auto=validate y no ejecuta scripts automáticamente. Los scripts de contenido se añadirán con sus entidades. La conexión Oracle está pendiente de comprobación.
+Servicio, ruta y usuario del ejemplo deben ajustarse a la instancia real. Oracle usa ddl-auto=validate y no ejecuta scripts automáticamente. Los scripts de database/ incluyen categorías y temas; se ampliarán con comentarios en el siguiente bloque. La conexión Oracle está pendiente de comprobación.
 
 No hay valores predeterminados de credenciales Oracle. Spring Boot no carga archivos .env automáticamente. Wallet, variables privadas y certificados quedan fuera de Git y de la entrega.
 
@@ -113,7 +113,33 @@ Los nombres son únicos sin distinguir mayúsculas ni espacios exteriores, conse
 
 Scripts propios en [database/01_estructura.sql](database/01_estructura.sql) y [database/02_datos_demostracion.sql](database/02_datos_demostracion.sql). Abrirlos como **UTF-8** en el cliente SQL. Ejecutar primero la estructura y luego los datos, una sola vez sobre la tabla vacía del esquema exclusivo de contenido. El segundo script inserta cinco categorías con IDs generados; no requiere IDs de usuarios. Mantener CLAVE_NOMBRE coherente con la normalización documentada al cargar SQL manualmente. No se cargan automáticamente al arrancar; el perfil local usa H2 en memoria y pierde sus datos al reiniciar.
 
-Los scripts están preparados para Oracle, pero todavía no se han ejecutado allí. La regla que impide borrar categorías con temas se incorpora al implementar la relación con temas en el próximo bloque.
+Los scripts están preparados para Oracle, pero todavía no se han ejecutado allí. Una categoría que contiene temas no se puede eliminar (409). Publicar o mover un tema y eliminar su categoría se coordinan mediante un bloqueo de fila durante la transacción; la base conserva además la clave foránea sin borrado en cascada.
+
+## Temas y búsqueda
+
+Todas las rutas requieren identidad vigente. Tanto USUARIO como ADMINISTRADOR pueden publicar y consultar. Solo el autor puede editar o eliminar su tema; el administrador no modifica temas ajenos.
+
+| Método y ruta | Resultado correcto |
+|---|---|
+| POST /api/temas | 201, tema creado y Location |
+| GET /api/temas | 200, lista de temas |
+| GET /api/temas/{id} | 200, tema |
+| PUT /api/temas/{id} | 200, tema actualizado por su autor |
+| DELETE /api/temas/{id} | 204, sin cuerpo; solo su autor |
+
+POST y PUT reciben estos tres campos:
+
+```json
+{"titulo":"Consulta sobre Java","contenido":"¿Cómo se usa una interfaz?","categoriaId":1}
+```
+
+Usar un categoriaId existente obtenido de GET /api/categorias. Título obligatorio de 1 a 200 caracteres después de quitar espacios exteriores; contenido obligatorio, no blanco, hasta 10000 caracteres. El contenido conserva sus saltos de línea y espacios. La respuesta incluye id, titulo, contenido, categoriaId, autorId y fechaCreacion. El autor se obtiene exclusivamente de la identidad HTTP; autor y fecha no cambian al editar. La fecha se expresa en UTC con precisión de microsegundos.
+
+Enviar autorId, fechaCreacion, id u otros campos desconocidos produce 400. Un tema o una categoría solicitada al publicar/editar que no existe produce 404. Los ID deben ser enteros positivos (400 si son inválidos). Modificar un tema ajeno produce 403 y no cambia los datos. PUT permite mover el tema a otra categoría existente.
+
+Para buscar: `GET /api/temas?texto=java&categoriaId=1`. Ambos filtros son opcionales y se combinan con AND. El texto busca una subcadena sin distinguir mayúsculas en título o contenido completo; conserva los acentos y trata `%`, `_` y `!` como caracteres literales. Codificar los parámetros en la URL mediante el cliente HTTP. Texto ausente o en blanco no filtra; categoriaId inexistente devuelve `[]`, al igual que cualquier búsqueda sin resultados. El orden siempre es fechaCreacion descendente y, en empate, id descendente. Se devuelve la lista completa, sin paginación en este alcance.
+
+El SQL de estructura incluye TEMAS con contenido CLOB, clave foránea a CATEGORIAS y AUTOR_ID sin relación SQL con usuarios. Las operaciones SQL LOWER y LIKE sobre CLOB se eligen según la [documentación de Oracle](https://docs.oracle.com/en/database/oracle/oracle-database/21/adlob/supported-functions-and-operators.html). La búsqueda se probó en H2 incluso después del carácter 9500; su compatibilidad y persistencia reales en Oracle todavía requieren verificación. Los datos de temas y comentarios se incorporarán juntos y con autores parametrizados en el siguiente bloque.
 
 ## Pruebas y documentación
 
@@ -121,7 +147,9 @@ Los scripts están preparados para Oracle, pero todavía no se han ejecutado all
 
 `IdentidadHttpTest` usa un servidor HTTP local de prueba en un puerto libre, servicios reales y H2. Comprueba identidad válida, rechazo de tokens, permisos, cambios de rol, redirecciones, demoras de cabeceras/cuerpo, caída de conexión y JSON inválido. Un controlador y una tabla exclusivos de test permiten verificar que las operaciones rechazadas no escriben datos; no forman parte del JAR ni del esquema Oracle. La suite no requiere que el otro repositorio exista o esté iniciado.
 
-`CategoriasApiTest` comprueba CRUD con JPA y H2, permisos mediante identidad HTTP, validación JSON, duplicados y creaciones concurrentes. También carga el SQL de demostración como UTF-8 y verifica las cinco categorías y sus acentos. Último clean verify: 66 pruebas aprobadas (1 de aplicación, 35 de identidad y 30 de categorías).
+`CategoriasApiTest` comprueba CRUD con JPA y H2, permisos mediante identidad HTTP, validación JSON, duplicados y creaciones concurrentes. También carga el SQL de demostración como UTF-8 y verifica las cinco categorías y sus acentos.
+
+`TemasApiTest` comprueba CRUD, autoría e inmutabilidad de autor/fecha, búsquedas combinadas y literales, contenido CLOB largo, categorías en uso y carreras con borrado de categoría. La suite usa un servidor HTTP de identidad de prueba y no necesita el servicio real de usuarios ni su repositorio. Los resultados de la última ejecución se registran en docs/verificacion.md.
 
 - [Diseño y separación de servicios](docs/diseno.md).
 - [Contrato HTTP de identidad](docs/contrato-identidad.md).

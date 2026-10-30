@@ -68,11 +68,11 @@
 
 **Interfaces:** TemaRequest(String titulo, String contenido, Long categoriaId). Respuesta id, titulo, contenido, categoriaId, autorId, fechaCreacion. GET/POST /api/temas; GET/PUT/DELETE /api/temas/{id}. TemaService.buscar(String texto, Long categoriaId): List<TemaResponse>. Autor asignado desde Identidad; inmutable al editar.
 
-- [ ] Escribir usuarioPublicaTemaConSuIdentidad y buscaPorTextoYCategoria; ejecutar antes de implementar.
-- [ ] Implementar título 1–200 y contenido 1–10000, no blancos; categoría obligatoria existente. texto busca sin distinguir mayúsculas en título/contenido, escapando % y _ para búsqueda literal; categoriaId se combina con AND. Orden fechaCreacion DESC, id DESC. Sin resultados → arreglo vacío 200.
-- [ ] Añadir publicacionRechazaAutorDelBody (400), otroAutorNoEditaNiBorra (403), adminNoModeraTemaAjeno (403), categoriaInexistenteEs404AlPublicar, categoriaInexistenteComoFiltroEsVacia, busquedaLiteralCombinada, temaInexistenteEs404, temaSePuedeMoverDeCategoria y categoriaEnUsoEs409. Ejecutar cada caso antes del comportamiento correspondiente.
-- [ ] Crear relación y constraint de categoría; impedir borrado de categoría en uso con 409, incluyendo carrera entre creación y borrado. No exponer entidades JPA directamente; DTO sin referencias recursivas.
-- [ ] Ejecutar .\mvnw.cmd test; registrar resultado y commit local.
+- [x] Escribir usuarioPublicaTemaConSuIdentidad y buscaPorTextoYCategoria; ejecutar antes de implementar.
+- [x] Implementar título 1–200 y contenido 1–10000, no blancos; categoría obligatoria existente. texto busca sin distinguir mayúsculas en título/contenido, escapando % y _ para búsqueda literal; categoriaId se combina con AND. Orden fechaCreacion DESC, id DESC. Sin resultados → arreglo vacío 200.
+- [x] Añadir publicacionRechazaAutorDelBody (400), otroAutorNoEditaNiBorra (403), adminNoModeraTemaAjeno (403), categoriaInexistenteEs404AlPublicar, categoriaInexistenteComoFiltroEsVacia, busquedaLiteralCombinada, temaInexistenteEs404, temaSePuedeMoverDeCategoria y categoriaEnUsoEs409. Ejecutar cada caso antes del comportamiento correspondiente.
+- [x] Crear relación y constraint de categoría; impedir borrado de categoría en uso con 409, incluyendo carrera entre creación y borrado. No exponer entidades JPA directamente; DTO sin referencias recursivas.
+- [x] Ejecutar .\mvnw.cmd test; registrar resultado y commit local.
 
 ## Task 5: Comentarios y reglas de eliminación
 

@@ -4,6 +4,7 @@ import cl.duoc.forocontenido.dto.*;
 import cl.duoc.forocontenido.exception.*;
 import cl.duoc.forocontenido.model.Categoria;
 import cl.duoc.forocontenido.repository.CategoriaRepository;
+import cl.duoc.forocontenido.repository.TemaRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
@@ -12,7 +13,11 @@ import java.util.List;
 @Transactional(readOnly = true)
 public class CategoriaService {
     private final CategoriaRepository categorias;
-    public CategoriaService(CategoriaRepository categorias) { this.categorias = categorias; }
+    private final TemaRepository temas;
+    public CategoriaService(CategoriaRepository categorias, TemaRepository temas) {
+        this.categorias = categorias;
+        this.temas = temas;
+    }
 
     public List<CategoriaResponse> listar() {
         return categorias.findAllByOrderByIdAsc().stream().map(CategoriaResponse::de).toList();
@@ -36,7 +41,12 @@ public class CategoriaService {
 
     @Transactional
     public void eliminar(Long id) {
-        categorias.delete(buscar(id));
+        if (id == null || id <= 0) throw new IllegalArgumentException("El ID debe ser positivo");
+        // La publicación y el cambio de categoría toman este mismo bloqueo.
+        var categoria = categorias.buscarConBloqueo(id)
+                .orElseThrow(() -> new RecursoNoEncontradoException("Categoría no encontrada"));
+        if (temas.existsByCategoria_Id(id)) throw new ConflictoException("La categoría tiene temas y no puede eliminarse");
+        categorias.delete(categoria);
         categorias.flush();
     }
     private Categoria buscar(Long id) {
