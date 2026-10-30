@@ -1,6 +1,6 @@
 # Verificación de la base de Foro Contenido
 
-Fecha: 29 de octubre de 2026. Alcance: Task 1 del plan, base autónoma. No constituye aún el desarrollo funcional completo del foro ni acredita Oracle.
+Fecha: 29 de octubre de 2026. Alcance: Tasks 1 y 2 del plan. Se conserva la evidencia histórica de la base y se agrega identidad HTTP. No constituye aún el desarrollo funcional completo del foro ni acredita Oracle.
 
 | Comprobación | Resultado observado |
 |---|---|
@@ -18,7 +18,7 @@ Fecha: 29 de octubre de 2026. Alcance: Task 1 del plan, base autónoma. No const
 | Revisión independiente | Sin hallazgos en Task 1 |
 | Oracle | Solo configuración preparada; conexión real pendiente |
 
-El JAR se inició con perfil local, loopback 127.0.0.1 y puerto asignado automáticamente. Se comprobó su respuesta HTTP y se cerró el proceso al terminar. En este bloque no existe cliente HTTP a usuarios ni se necesita una clave JWT.
+En Task 1 el JAR se inició con perfil local, loopback 127.0.0.1 y puerto asignado automáticamente. Se comprobó su respuesta HTTP y se cerró el proceso al terminar. En ese bloque todavía no existía cliente HTTP a usuarios; la verificación de Task 2 siguiente lo amplía. Contenido no necesita una clave JWT.
 
 ## Autonomía comprobada
 
@@ -37,10 +37,39 @@ Desde esta raíz, con JDK 17 y las dependencias disponibles:
 java -jar target/foro-contenido-0.0.1-SNAPSHOT.jar --spring.profiles.active=local --server.port=0
 ```
 
-Consultar el puerto de Tomcat y solicitar `/`: durante este bloque devuelve 404. Detener con Ctrl+C. La futura seguridad cambiará la respuesta anónima de las rutas protegidas; ese comportamiento se verificará en Task 2.
+Consultar el puerto de Tomcat. El 404 anónimo de Task 1 es histórico: la versión actual exige autenticación y devuelve 401 sin token. Con token válido y usuarios accesible, `/` llega al 404 de una ruta sin controlador; no se añade una ruta de negocio para simular esta fase. Detener con Ctrl+C.
 
 Las pruebas Maven se ejecutaron con permisos autorizados por las restricciones de instrumentación Java del entorno. OpenJDK emitió la advertencia conocida de class sharing; la suite terminó sin errores. Logs locales: .verificacion/base-red.log, .verificacion/base-verify.log y .verificacion/base-http.log. Informes JUnit: target/surefire-reports/. Estos artefactos están excluidos de Git.
 
 ## Pendientes
 
-Cliente HTTP de identidad y seguridad, categorías, temas, comentarios, búsqueda, scripts SQL, datos de demostración, colección Postman y conexión/verificación Oracle. No se implementa frontend.
+Categorías, temas, comentarios, búsqueda, scripts SQL, datos de demostración, colección Postman y conexión/verificación Oracle. No se implementa frontend.
+
+## Verificación de identidad HTTP
+
+| Comprobación | Resultado observado |
+|---|---|
+| Suite completa | 36 pruebas, 0 fallos, 0 errores, 0 omitidas |
+| Compilación y JAR | clean verify: BUILD SUCCESS, código 0 |
+| Cliente real | Petición HTTP a servidor de prueba, sin simular RestClient |
+| Credencial | Solo se reenvía Bearer; no cookies; sin cabecera no se consulta usuarios |
+| Seguridad | 401 por token inválido/ausente y 403 por rol insuficiente |
+| Fallos de usuarios | 503 por estado inesperado, desconexión, demora, JSON o identidad inválidos |
+| Timeouts | Probados antes de recibir cabeceras y durante la lectura del cuerpo |
+| Redirección | 302 rechazada con 503, sin enviar token al destino redirigido |
+| Efectos | Cero escrituras H2 cuando falla la identidad o el permiso |
+| Rol vigente | Nueva consulta en cada petición; cambio de rol y rechazo posterior reflejados sin caché |
+| Dos JAR reales | Token emitido por usuarios aceptado por contenido; usuarios detenido produce 503 |
+| Separación | Contenido arrancó sin clave JWT y no tiene dependencia Java de usuarios |
+| Revisión independiente | Sin defectos bloqueantes ni observaciones accionables |
+| Oracle | Pendiente de comprobación real |
+
+Distribución: AplicacionTest 1 e IdentidadHttpTest 35. Las pruebas de identidad incluyen ID ausente/inválido, tipos numéricos/textuales incorrectos, nombre/correo inválidos, rol desconocido/nulo, cuerpo de más de 16 KiB y estados 204/3xx/403/404/429/500/503. Los estados distintos del 200 válido y del 401 se tratan como identidad no verificable.
+
+La tabla PRUEBA_ESCRITURAS y las rutas /prueba existen solo en los recursos de prueba. Un controlador de test intenta insertar con JDBC, permitiendo comprobar ausencia de efectos cuando la seguridad rechaza la solicitud. No forman parte del código productivo ni del esquema SQL del foro.
+
+La integración real ejecutó los dos JAR en loopback y puertos aleatorios. Se registró una cuenta en usuarios y se obtuvo su accessToken. Contenido, con USUARIOS_BASE_URL dirigido a esa instancia y sin JWT_SECRET_BASE64 en su entorno, devolvió 401 sin token, 404 para la ruta inexistente con token válido, 401 para token inválido y 503 después de detener usuarios. No se presenta el 404 como una consulta de negocio implementada: demuestra el paso correcto del filtro de identidad. Ambos procesos se cerraron y las credenciales temporales solo existieron en memoria.
+
+Para reproducir la suite, ejecutar clean verify; no requiere el otro servicio. Para la integración real, iniciar ambos JAR según sus README y usar un token de usuarios. La aplicación no comparte clases, tablas, Wallet de esquema ni clave de firma. La prueba local usa el JAR precompilado de usuarios como contraparte HTTP, no como dependencia de compilación.
+
+Evidencia local: .verificacion/identidad-red.log, .verificacion/identidad-verify.log, .verificacion/integracion-usuarios.log y .verificacion/integracion-contenido.log. Scripts y logs diagnósticos excluidos de Git; informes JUnit en target/surefire-reports/. No se publicaron remotos.

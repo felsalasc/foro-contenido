@@ -4,11 +4,11 @@ Backend de contenido para el sistema de foros de DSY2205, Semana 2. Aplicación 
 
 ## Estado actual
 
-Primer bloque: configuración Maven, clase principal, perfiles local/Oracle y prueba de arranque con JDBC. Categorías, temas, comentarios y búsqueda se implementarán en los siguientes bloques. No hay endpoints de negocio todavía; `/` devuelve 404.
+Base Maven y autenticación HTTP implementadas. Las rutas requieren Bearer y contenido consulta la identidad vigente en usuarios antes de ejecutarlas. Categorías, temas, comentarios y búsqueda se implementarán en los siguientes bloques. Todavía no hay endpoints de negocio: sin token `/` devuelve 401; con identidad válida llega al 404 de la ruta aún inexistente.
 
 Este repositorio contiene su propio pom.xml, Maven Wrapper, código, configuración y pruebas. No existe un proyecto padre del foro ni una dependencia Java o Maven hacia foro-usuarios. Se compila y arranca por separado.
 
-La integración de identidad se añadirá en el siguiente bloque mediante HTTP a GET `/api/auth/me` de foro-usuarios. Contenido verificará los Bearer tokens consultando ese servicio: no emitirá tokens, no compartirá la clave de firma y no accederá a USUARIOS. Sus tablas de categorías, temas y comentarios estarán en un esquema Oracle propio.
+La identidad se verifica mediante HTTP a GET `/api/auth/me` de foro-usuarios. Contenido no emite ni descifra JWT, no necesita JWT_SECRET_BASE64 y no accede a USUARIOS. Sus tablas de categorías, temas y comentarios estarán en un esquema Oracle propio.
 
 ## Requisitos y compilación
 
@@ -29,6 +29,15 @@ En Linux o macOS: `sh ./mvnw clean verify`, con JDK 17 disponible. Las pruebas a
 ## Desarrollo local
 
 ```powershell
+.\mvnw.cmd spring-boot:run '-Dspring-boot.run.profiles=local'
+```
+
+El arranque y la compilación no necesitan usuarios activo. Para autorizar peticiones, definir la URL HTTP de usuarios; por defecto se usa http://localhost:8081:
+
+```powershell
+$env:USUARIOS_BASE_URL = 'http://localhost:8081'
+$env:USUARIOS_CONNECT_TIMEOUT = '2s'
+$env:USUARIOS_READ_TIMEOUT = '3s'
 .\mvnw.cmd spring-boot:run '-Dspring-boot.run.profiles=local'
 ```
 
@@ -62,9 +71,29 @@ Servicio, ruta y usuario del ejemplo deben ajustarse a la instancia real. Oracle
 
 No hay valores predeterminados de credenciales Oracle. Spring Boot no carga archivos .env automáticamente. Wallet, variables privadas y certificados quedan fuera de Git y de la entrega.
 
+## Identidad y seguridad
+
+Obtener un accessToken mediante POST `/api/auth/login` en usuarios y enviarlo a contenido con `Authorization: Bearer <accessToken>`. Contenido reenvía únicamente esa credencial a GET `/api/auth/me`; no reenvía cookies ni usa una URL indicada en la petición entrante.
+
+| Situación | Respuesta de contenido |
+|---|---|
+| Falta Bearer, cabecera inválida o usuarios responde 401 | 401, con WWW-Authenticate: Bearer |
+| Identidad vigente válida | Se ejecuta la ruta solicitada con el ID y rol devueltos por usuarios |
+| La ruta exige un permiso que el rol no tiene | 403 |
+| Usuarios no responde, vence un timeout o devuelve un estado inesperado | 503; no se ejecuta la operación |
+| Identidad incompleta, tipos incorrectos, rol desconocido o respuesta no JSON | 503; no se ejecuta la operación |
+
+Los errores usan application/problem+json con status, title y detail, sin copiar mensajes internos de usuarios ni incluir el token. Se exige una única cabecera Authorization y un valor Bearer válido. Los roles admitidos son USUARIO y ADMINISTRADOR.
+
+USUARIOS_BASE_URL debe ser una URL HTTP o HTTPS sin credenciales, query ni fragmento. El cliente usa 2 segundos para conexión y 3 para lectura por defecto, configurables con las variables anteriores; deben ser mayores que cero. No sigue redirecciones ni incorpora reintentos de aplicación o caché de identidad. La respuesta de identidad se limita a 16 KiB y se valida con el contrato de cuatro campos y las restricciones de nombre/correo/rol.
+
+Cada petición vuelve a consultar usuarios. Los cambios de rol y la desactivación de cuentas se reflejan sin esperar a que expire el token. La API usa autenticación stateless; no hay sesiones, cookies de autenticación, formulario ni HTTP Basic. La cuenta en memoria predeterminada de Spring Boot está deshabilitada. No se configura CORS abierto; el alcance sigue siendo solo backend.
+
 ## Pruebas y documentación
 
 `AplicacionTest` activa local, inicia el contexto real y verifica SELECT 1 mediante JDBC contra H2. Los informes están en target/surefire-reports; clean verify genera el JAR ejecutable propio.
+
+`IdentidadHttpTest` usa un servidor HTTP local de prueba en un puerto libre, servicios reales y H2. Comprueba identidad válida, rechazo de tokens, permisos, cambios de rol, redirecciones, demoras de cabeceras/cuerpo, caída de conexión y JSON inválido. Un controlador y una tabla exclusivos de test permiten verificar que las operaciones rechazadas no escriben datos; no forman parte del JAR ni del esquema Oracle. La suite no requiere que el otro repositorio exista o esté iniciado.
 
 - [Diseño y separación de servicios](docs/diseno.md).
 - [Contrato HTTP de identidad](docs/contrato-identidad.md).

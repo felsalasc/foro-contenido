@@ -46,10 +46,10 @@
 
 **Interfaces:** Identidad(Long id, String nombre, String correo, String rol). UsuariosClient.obtener(String bearerToken): Identidad; GET /api/auth/me del contrato. Filtro crea principal local. UsuariosStub usa com.sun.net.httpserver.HttpServer en puerto libre, con respuestas y retardos configurables solo en pruebas.
 
-- [ ] Escribir casos contratoMeValido y tokenAusenteEs401, con HTTP stub real. Ejecutar .\mvnw.cmd '-Dtest=IdentidadHttpTest' test antes de implementar y observar el fallo por integración inexistente.
-- [ ] Implementar cliente con RestClient y timeouts 2/3 segundos configurables, filtro, ProblemDetail y seguridad sin sesiones. Requerir identidad en todos los endpoints de negocio.
-- [ ] Añadir primero los casos usuarioResponde401, identidadCaidaEs503SinEscritura, identidadMalformadaEs503, identidadTimeoutEs503 y rolDesconocidoEs503. Comprobar estado y ausencia de cambio en datos; no limitarse a verificar llamadas del mock. No cachear ni reintentar autenticación.
-- [ ] Ejecutar .\mvnw.cmd test; registrar resultado y commit local.
+- [x] Escribir casos contratoMeValido y tokenAusenteEs401, con HTTP stub real. Ejecutar .\mvnw.cmd '-Dtest=IdentidadHttpTest' test antes de implementar y observar el fallo por integración inexistente.
+- [x] Implementar cliente con RestClient y timeouts 2/3 segundos configurables, filtro, ProblemDetail y seguridad sin sesiones. Requerir identidad en todos los endpoints de negocio.
+- [x] Añadir primero los casos usuarioResponde401, identidadCaidaEs503SinEscritura, identidadMalformadaEs503, identidadTimeoutEs503 y rolDesconocidoEs503. Comprobar estado y ausencia de cambio en datos; no limitarse a verificar llamadas del mock. No cachear ni reintentar autenticación.
+- [x] Ejecutar .\mvnw.cmd test; registrar resultado y commit local.
 
 ## Task 3: Categorías
 
