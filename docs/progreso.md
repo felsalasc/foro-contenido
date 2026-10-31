@@ -104,3 +104,11 @@ Pre-flight: consume Identidad, Tema y la seguridad existentes; produce comentari
 Task 5: complete. Evidencia: clean verify 138/138, carga de datos SQL sobre H2, dataset con cuentas reales por HTTP, CRUD/cascada entre JAR y revisión independiente. Commit local sin publicación. Oracle sigue pendiente de ejecución real.
 
 Task 6 pendiente: Oracle, Postman, integración con persistencia real y evidencia de entrega. Sin frontend y sin publicación automática.
+
+## Preparación parcial de Task 6 — 31 de octubre de 2026
+
+Se prepararon colección/entorno Postman propios, SQL de verificación, documentación Oracle, matriz y guion del video. Ver docs/verificacion.md para resultados: compilación independiente verde (85 usuarios / 138 contenido), 85 flujos HTTP locales verificados y scripts JSON/JS revisados. Se eligió carga de usuarios mediante inicializador + registro, alternativa prevista por el plan, en lugar de SQL con hashes predefinidos.
+
+Newman no se instaló porque su descarga fue rechazada. El reproductor HTTP local no se presenta como ejecución del runtime Postman. Wallet existente sin credenciales ni confirmación de instancia/esquemas; se solicitó esa información sin pedir contraseñas por chat. No se conectó ni modificó Oracle. Este avance se registra en commit local propio; el bloque sigue incompleto y no se publican remotos ni una entrega final.
+
+Actualización de preparación: el usuario confirmó BIBLIOTECA activa y ambos esquemas pendientes. Las instrucciones SQL como administrador están preparadas en docs/oracle-y-entrega.md; no se ejecutaron. La revisión independiente encontró que una aserción fallida con HTTP esperado no detenía la colección. Se reprodujo y corrigió: las guardas ahora detienen el recorrido ante aserciones, JSON o estructura inválidos. También se reprodujo y corrigió el escape de comillas/barras en la contraseña del login administrativo mediante JSON.stringify. Ocho casos Node focalizados pasaron RED→GREEN sobre esos scripts; son dobles mínimos del contrato de callbacks/variables, no el runtime Postman. Los 85 flujos HTTP se volvieron a verificar con los archivos finales. No hubo cambios de Java ni necesidad de repetir la suite Maven ya aprobada después de esos ajustes de colección.

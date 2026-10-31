@@ -1,0 +1,2474 @@
+{
+  "info": {
+    "name": "Foro contenido — recorrido verificable",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Ejecutar completa en Collection Runner, en orden. Requiere administrador existente. Crea cuentas/datos de demostración y modifica solo sus registros nuevos; mantiene mínimos. Tokens y contraseñas de prueba solo en variables locales de ejecución. Oracle y persistencia se acreditan aparte; ver postman/README.md."
+  },
+  "item": [
+    {
+      "name": "01. Login del administrador existente",
+      "request": {
+        "method": "POST",
+        "url": "{{usuariosBaseUrl}}/api/auth/login",
+        "auth": {
+          "type": "noauth"
+        },
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json, application/problem+json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{{adminLoginJson}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if (!pm.environment.get('adminCorreo') || !pm.environment.get('adminPassword')) { pm.execution.setNextRequest(null); throw new Error('Configurar adminCorreo y adminPassword localmente antes de ejecutar'); }",
+              "pm.variables.set('adminLoginJson', JSON.stringify({correo: pm.environment.get('adminCorreo'), password: pm.environment.get('adminPassword')}));",
+              "const id = pm.variables.replaceIn('{{$guid}}').replace(/-/g, '').slice(0, 16);",
+              "pm.variables.set('runId', id);",
+              "pm.variables.set('passwordPrueba', 'Prueba-Aa9-' + pm.variables.replaceIn('{{$guid}}'));",
+              "pm.variables.set('correoA', 'a-' + id + '@example.test'); pm.variables.set('correoB', 'b-' + id + '@example.test');",
+              "pm.variables.set('correoTemporal', 'baja-' + id + '@example.test');",
+              "pm.variables.set('tokenInvalido', 'token-invalido');"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "function verificar(nombre, fn) { pm.test(nombre, () => { try { fn(); } catch (error) { pm.execution.setNextRequest(null); throw error; } }); }",
+              "try {",
+              "verificar('HTTP 200', () => pm.response.to.have.status(200));",
+              "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); } else {",
+              "const r = pm.response.json();",
+              "if (r.accessToken === undefined || r.accessToken === null) throw new Error('Falta el campo accessToken');",
+              "if (pm.response.code === 200) pm.variables.set('adminToken', r.accessToken);",
+              "if (r.usuario.id === undefined || r.usuario.id === null) throw new Error('Falta el campo usuario.id');",
+              "if (pm.response.code === 200) pm.variables.set('adminId', r.usuario.id);",
+              "verificar(\"Rol administrador\", () => { pm.expect(r.usuario.rol).to.eql('ADMINISTRADOR'); });",
+              "}",
+              "} catch (error) { pm.execution.setNextRequest(null); pm.test('Respuesta JSON con estructura válida', () => { throw error; }); }"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "02. Registrar usuario A",
+      "request": {
+        "method": "POST",
+        "url": "{{usuariosBaseUrl}}/api/auth/registro",
+        "auth": {
+          "type": "noauth"
+        },
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json, application/problem+json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"nombre\": \"Usuario A Postman\", \"correo\": \"{{correoA}}\", \"password\": \"{{passwordPrueba}}\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "function verificar(nombre, fn) { pm.test(nombre, () => { try { fn(); } catch (error) { pm.execution.setNextRequest(null); throw error; } }); }",
+              "try {",
+              "verificar('HTTP 201', () => pm.response.to.have.status(201));",
+              "if (pm.response.code !== 201) { pm.execution.setNextRequest(null); } else {",
+              "const r = pm.response.json();",
+              "if (r.id === undefined || r.id === null) throw new Error('Falta el campo id');",
+              "if (pm.response.code === 201) pm.variables.set('userAId', r.id);",
+              "verificar(\"Sin secretos\", () => { pm.expect(r).not.to.have.property('password'); pm.expect(r).not.to.have.property('passwordHash'); });",
+              "}",
+              "} catch (error) { pm.execution.setNextRequest(null); pm.test('Respuesta JSON con estructura válida', () => { throw error; }); }"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "03. Registrar usuario B",
+      "request": {
+        "method": "POST",
+        "url": "{{usuariosBaseUrl}}/api/auth/registro",
+        "auth": {
+          "type": "noauth"
+        },
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json, application/problem+json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"nombre\": \"Usuario B Postman\", \"correo\": \"{{correoB}}\", \"password\": \"{{passwordPrueba}}\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "function verificar(nombre, fn) { pm.test(nombre, () => { try { fn(); } catch (error) { pm.execution.setNextRequest(null); throw error; } }); }",
+              "try {",
+              "verificar('HTTP 201', () => pm.response.to.have.status(201));",
+              "if (pm.response.code !== 201) { pm.execution.setNextRequest(null); } else {",
+              "const r = pm.response.json();",
+              "if (r.id === undefined || r.id === null) throw new Error('Falta el campo id');",
+              "if (pm.response.code === 201) pm.variables.set('userBId', r.id);",
+              "verificar(\"Sin secretos\", () => { pm.expect(r).not.to.have.property('password'); pm.expect(r).not.to.have.property('passwordHash'); });",
+              "}",
+              "} catch (error) { pm.execution.setNextRequest(null); pm.test('Respuesta JSON con estructura válida', () => { throw error; }); }"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "04. Login usuario A",
+      "request": {
+        "method": "POST",
+        "url": "{{usuariosBaseUrl}}/api/auth/login",
+        "auth": {
+          "type": "noauth"
+        },
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json, application/problem+json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"correo\": \"{{correoA}}\", \"password\": \"{{passwordPrueba}}\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "function verificar(nombre, fn) { pm.test(nombre, () => { try { fn(); } catch (error) { pm.execution.setNextRequest(null); throw error; } }); }",
+              "try {",
+              "verificar('HTTP 200', () => pm.response.to.have.status(200));",
+              "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); } else {",
+              "const r = pm.response.json();",
+              "if (r.accessToken === undefined || r.accessToken === null) throw new Error('Falta el campo accessToken');",
+              "if (pm.response.code === 200) pm.variables.set('tokenA', r.accessToken);",
+              "}",
+              "} catch (error) { pm.execution.setNextRequest(null); pm.test('Respuesta JSON con estructura válida', () => { throw error; }); }"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "05. Login usuario B",
+      "request": {
+        "method": "POST",
+        "url": "{{usuariosBaseUrl}}/api/auth/login",
+        "auth": {
+          "type": "noauth"
+        },
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json, application/problem+json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"correo\": \"{{correoB}}\", \"password\": \"{{passwordPrueba}}\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "function verificar(nombre, fn) { pm.test(nombre, () => { try { fn(); } catch (error) { pm.execution.setNextRequest(null); throw error; } }); }",
+              "try {",
+              "verificar('HTTP 200', () => pm.response.to.have.status(200));",
+              "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); } else {",
+              "const r = pm.response.json();",
+              "if (r.accessToken === undefined || r.accessToken === null) throw new Error('Falta el campo accessToken');",
+              "if (pm.response.code === 200) pm.variables.set('tokenB', r.accessToken);",
+              "}",
+              "} catch (error) { pm.execution.setNextRequest(null); pm.test('Respuesta JSON con estructura válida', () => { throw error; }); }"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "06. Crear categoría 1",
+      "request": {
+        "method": "POST",
+        "url": "{{contenidoBaseUrl}}/api/categorias",
+        "auth": {
+          "type": "noauth"
+        },
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json, application/problem+json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"nombre\": \"Programación {{runId}}\", \"descripcion\": \"Demostración Postman\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "function verificar(nombre, fn) { pm.test(nombre, () => { try { fn(); } catch (error) { pm.execution.setNextRequest(null); throw error; } }); }",
+              "try {",
+              "verificar('HTTP 201', () => pm.response.to.have.status(201));",
+              "if (pm.response.code !== 201) { pm.execution.setNextRequest(null); } else {",
+              "const r = pm.response.json();",
+              "if (r.id === undefined || r.id === null) throw new Error('Falta el campo id');",
+              "if (pm.response.code === 201) pm.variables.set('cat1Id', r.id);",
+              "}",
+              "} catch (error) { pm.execution.setNextRequest(null); pm.test('Respuesta JSON con estructura válida', () => { throw error; }); }"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "07. Crear categoría 2",
+      "request": {
+        "method": "POST",
+        "url": "{{contenidoBaseUrl}}/api/categorias",
+        "auth": {
+          "type": "noauth"
+        },
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json, application/problem+json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"nombre\": \"Bases de datos {{runId}}\", \"descripcion\": \"Demostración Postman\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "function verificar(nombre, fn) { pm.test(nombre, () => { try { fn(); } catch (error) { pm.execution.setNextRequest(null); throw error; } }); }",
+              "try {",
+              "verificar('HTTP 201', () => pm.response.to.have.status(201));",
+              "if (pm.response.code !== 201) { pm.execution.setNextRequest(null); } else {",
+              "const r = pm.response.json();",
+              "if (r.id === undefined || r.id === null) throw new Error('Falta el campo id');",
+              "if (pm.response.code === 201) pm.variables.set('cat2Id', r.id);",
+              "}",
+              "} catch (error) { pm.execution.setNextRequest(null); pm.test('Respuesta JSON con estructura válida', () => { throw error; }); }"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "08. Crear categoría 3",
+      "request": {
+        "method": "POST",
+        "url": "{{contenidoBaseUrl}}/api/categorias",
+        "auth": {
+          "type": "noauth"
+        },
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json, application/problem+json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"nombre\": \"Tecnología {{runId}}\", \"descripcion\": \"Demostración Postman\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "function verificar(nombre, fn) { pm.test(nombre, () => { try { fn(); } catch (error) { pm.execution.setNextRequest(null); throw error; } }); }",
+              "try {",
+              "verificar('HTTP 201', () => pm.response.to.have.status(201));",
+              "if (pm.response.code !== 201) { pm.execution.setNextRequest(null); } else {",
+              "const r = pm.response.json();",
+              "if (r.id === undefined || r.id === null) throw new Error('Falta el campo id');",
+              "if (pm.response.code === 201) pm.variables.set('cat3Id', r.id);",
+              "}",
+              "} catch (error) { pm.execution.setNextRequest(null); pm.test('Respuesta JSON con estructura válida', () => { throw error; }); }"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "09. Crear categoría 4",
+      "request": {
+        "method": "POST",
+        "url": "{{contenidoBaseUrl}}/api/categorias",
+        "auth": {
+          "type": "noauth"
+        },
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json, application/problem+json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"nombre\": \"Videojuegos {{runId}}\", \"descripcion\": \"Demostración Postman\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "function verificar(nombre, fn) { pm.test(nombre, () => { try { fn(); } catch (error) { pm.execution.setNextRequest(null); throw error; } }); }",
+              "try {",
+              "verificar('HTTP 201', () => pm.response.to.have.status(201));",
+              "if (pm.response.code !== 201) { pm.execution.setNextRequest(null); } else {",
+              "const r = pm.response.json();",
+              "if (r.id === undefined || r.id === null) throw new Error('Falta el campo id');",
+              "if (pm.response.code === 201) pm.variables.set('cat4Id', r.id);",
+              "}",
+              "} catch (error) { pm.execution.setNextRequest(null); pm.test('Respuesta JSON con estructura válida', () => { throw error; }); }"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "10. Crear categoría 5",
+      "request": {
+        "method": "POST",
+        "url": "{{contenidoBaseUrl}}/api/categorias",
+        "auth": {
+          "type": "noauth"
+        },
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json, application/problem+json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"nombre\": \"Consultas académicas {{runId}}\", \"descripcion\": \"Demostración Postman\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "function verificar(nombre, fn) { pm.test(nombre, () => { try { fn(); } catch (error) { pm.execution.setNextRequest(null); throw error; } }); }",
+              "try {",
+              "verificar('HTTP 201', () => pm.response.to.have.status(201));",
+              "if (pm.response.code !== 201) { pm.execution.setNextRequest(null); } else {",
+              "const r = pm.response.json();",
+              "if (r.id === undefined || r.id === null) throw new Error('Falta el campo id');",
+              "if (pm.response.code === 201) pm.variables.set('cat5Id', r.id);",
+              "}",
+              "} catch (error) { pm.execution.setNextRequest(null); pm.test('Respuesta JSON con estructura válida', () => { throw error; }); }"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "11. Consultar categorías",
+      "request": {
+        "method": "GET",
+        "url": "{{contenidoBaseUrl}}/api/categorias",
+        "auth": {
+          "type": "noauth"
+        },
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json, application/problem+json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenA}}"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "function verificar(nombre, fn) { pm.test(nombre, () => { try { fn(); } catch (error) { pm.execution.setNextRequest(null); throw error; } }); }",
+              "try {",
+              "verificar('HTTP 200', () => pm.response.to.have.status(200));",
+              "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); } else {",
+              "const r = pm.response.json();",
+              "verificar(\"Al menos cinco categor\\u00edas\", () => { pm.expect(r.length).to.be.at.least(5); });",
+              "}",
+              "} catch (error) { pm.execution.setNextRequest(null); pm.test('Respuesta JSON con estructura válida', () => { throw error; }); }"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "12. Usuario no crea categoría",
+      "request": {
+        "method": "POST",
+        "url": "{{contenidoBaseUrl}}/api/categorias",
+        "auth": {
+          "type": "noauth"
+        },
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json, application/problem+json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenA}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"nombre\": \"Denegada {{runId}}\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "function verificar(nombre, fn) { pm.test(nombre, () => { try { fn(); } catch (error) { pm.execution.setNextRequest(null); throw error; } }); }",
+              "try {",
+              "verificar('HTTP 403', () => pm.response.to.have.status(403));",
+              "if (pm.response.code !== 403) { pm.execution.setNextRequest(null); } else {",
+              "const r = pm.response.json();",
+              "}",
+              "} catch (error) { pm.execution.setNextRequest(null); pm.test('Respuesta JSON con estructura válida', () => { throw error; }); }"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "13. Categoría duplicada normalizada",
+      "request": {
+        "method": "POST",
+        "url": "{{contenidoBaseUrl}}/api/categorias",
+        "auth": {
+          "type": "noauth"
+        },
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json, application/problem+json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"nombre\": \"  programación {{runId}}  \"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "function verificar(nombre, fn) { pm.test(nombre, () => { try { fn(); } catch (error) { pm.execution.setNextRequest(null); throw error; } }); }",
+              "try {",
+              "verificar('HTTP 409', () => pm.response.to.have.status(409));",
+              "if (pm.response.code !== 409) { pm.execution.setNextRequest(null); } else {",
+              "const r = pm.response.json();",
+              "}",
+              "} catch (error) { pm.execution.setNextRequest(null); pm.test('Respuesta JSON con estructura válida', () => { throw error; }); }"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "14. Publicar tema 1",
+      "request": {
+        "method": "POST",
+        "url": "{{contenidoBaseUrl}}/api/temas",
+        "auth": {
+          "type": "noauth"
+        },
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json, application/problem+json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenA}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"titulo\": \"Java 100%_ {{runId}}\", \"contenido\": \"Texto con acentos: programación y SQL.\", \"categoriaId\": {{cat1Id}}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "function verificar(nombre, fn) { pm.test(nombre, () => { try { fn(); } catch (error) { pm.execution.setNextRequest(null); throw error; } }); }",
+              "try {",
+              "verificar('HTTP 201', () => pm.response.to.have.status(201));",
+              "if (pm.response.code !== 201) { pm.execution.setNextRequest(null); } else {",
+              "const r = pm.response.json();",
+              "if (r.id === undefined || r.id === null) throw new Error('Falta el campo id');",
+              "if (pm.response.code === 201) pm.variables.set('tema1Id', r.id);",
+              "verificar(\"Autor de la identidad\", () => { pm.expect(r.autorId).to.eql(Number(pm.variables.get('userAId'))); });",
+              "}",
+              "} catch (error) { pm.execution.setNextRequest(null); pm.test('Respuesta JSON con estructura válida', () => { throw error; }); }"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "15. Publicar tema 2",
+      "request": {
+        "method": "POST",
+        "url": "{{contenidoBaseUrl}}/api/temas",
+        "auth": {
+          "type": "noauth"
+        },
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json, application/problem+json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenB}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"titulo\": \"Tema 2 {{runId}}\", \"contenido\": \"Texto con acentos: programación y SQL.\", \"categoriaId\": {{cat2Id}}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "function verificar(nombre, fn) { pm.test(nombre, () => { try { fn(); } catch (error) { pm.execution.setNextRequest(null); throw error; } }); }",
+              "try {",
+              "verificar('HTTP 201', () => pm.response.to.have.status(201));",
+              "if (pm.response.code !== 201) { pm.execution.setNextRequest(null); } else {",
+              "const r = pm.response.json();",
+              "if (r.id === undefined || r.id === null) throw new Error('Falta el campo id');",
+              "if (pm.response.code === 201) pm.variables.set('tema2Id', r.id);",
+              "verificar(\"Autor de la identidad\", () => { pm.expect(r.autorId).to.eql(Number(pm.variables.get('userBId'))); });",
+              "}",
+              "} catch (error) { pm.execution.setNextRequest(null); pm.test('Respuesta JSON con estructura válida', () => { throw error; }); }"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "16. Publicar tema 3",
+      "request": {
+        "method": "POST",
+        "url": "{{contenidoBaseUrl}}/api/temas",
+        "auth": {
+          "type": "noauth"
+        },
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json, application/problem+json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"titulo\": \"Tema 3 {{runId}}\", \"contenido\": \"Texto con acentos: programación y SQL.\", \"categoriaId\": {{cat3Id}}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "function verificar(nombre, fn) { pm.test(nombre, () => { try { fn(); } catch (error) { pm.execution.setNextRequest(null); throw error; } }); }",
+              "try {",
+              "verificar('HTTP 201', () => pm.response.to.have.status(201));",
+              "if (pm.response.code !== 201) { pm.execution.setNextRequest(null); } else {",
+              "const r = pm.response.json();",
+              "if (r.id === undefined || r.id === null) throw new Error('Falta el campo id');",
+              "if (pm.response.code === 201) pm.variables.set('tema3Id', r.id);",
+              "verificar(\"Autor de la identidad\", () => { pm.expect(r.autorId).to.eql(Number(pm.variables.get('adminId'))); });",
+              "}",
+              "} catch (error) { pm.execution.setNextRequest(null); pm.test('Respuesta JSON con estructura válida', () => { throw error; }); }"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "17. Buscar literal y categoría",
+      "request": {
+        "method": "GET",
+        "url": "{{contenidoBaseUrl}}/api/temas?texto=100%25_&categoriaId={{cat1Id}}",
+        "auth": {
+          "type": "noauth"
+        },
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json, application/problem+json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenA}}"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "function verificar(nombre, fn) { pm.test(nombre, () => { try { fn(); } catch (error) { pm.execution.setNextRequest(null); throw error; } }); }",
+              "try {",
+              "verificar('HTTP 200', () => pm.response.to.have.status(200));",
+              "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); } else {",
+              "const r = pm.response.json();",
+              "verificar(\"Solo el tema esperado\", () => { pm.expect(r.map(t => t.id)).to.eql([Number(pm.variables.get('tema1Id'))]); });",
+              "}",
+              "} catch (error) { pm.execution.setNextRequest(null); pm.test('Respuesta JSON con estructura válida', () => { throw error; }); }"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "18. Búsqueda sin resultados",
+      "request": {
+        "method": "GET",
+        "url": "{{contenidoBaseUrl}}/api/temas?texto=ausente-{{runId}}",
+        "auth": {
+          "type": "noauth"
+        },
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json, application/problem+json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenA}}"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "function verificar(nombre, fn) { pm.test(nombre, () => { try { fn(); } catch (error) { pm.execution.setNextRequest(null); throw error; } }); }",
+              "try {",
+              "verificar('HTTP 200', () => pm.response.to.have.status(200));",
+              "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); } else {",
+              "const r = pm.response.json();",
+              "verificar(\"Lista vac\\u00eda\", () => { pm.expect(r).to.eql([]); });",
+              "}",
+              "} catch (error) { pm.execution.setNextRequest(null); pm.test('Respuesta JSON con estructura válida', () => { throw error; }); }"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "19. No suplantar autor del tema",
+      "request": {
+        "method": "POST",
+        "url": "{{contenidoBaseUrl}}/api/temas",
+        "auth": {
+          "type": "noauth"
+        },
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json, application/problem+json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenA}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"titulo\": \"Inválido\", \"contenido\": \"Texto\", \"categoriaId\": {{cat1Id}}, \"autorId\": 999}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "function verificar(nombre, fn) { pm.test(nombre, () => { try { fn(); } catch (error) { pm.execution.setNextRequest(null); throw error; } }); }",
+              "try {",
+              "verificar('HTTP 400', () => pm.response.to.have.status(400));",
+              "if (pm.response.code !== 400) { pm.execution.setNextRequest(null); } else {",
+              "const r = pm.response.json();",
+              "}",
+              "} catch (error) { pm.execution.setNextRequest(null); pm.test('Respuesta JSON con estructura válida', () => { throw error; }); }"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "20. Categoría inexistente al publicar",
+      "request": {
+        "method": "POST",
+        "url": "{{contenidoBaseUrl}}/api/temas",
+        "auth": {
+          "type": "noauth"
+        },
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json, application/problem+json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenA}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"titulo\": \"Inválido\", \"contenido\": \"Texto\", \"categoriaId\": 9999999999999999}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "function verificar(nombre, fn) { pm.test(nombre, () => { try { fn(); } catch (error) { pm.execution.setNextRequest(null); throw error; } }); }",
+              "try {",
+              "verificar('HTTP 404', () => pm.response.to.have.status(404));",
+              "if (pm.response.code !== 404) { pm.execution.setNextRequest(null); } else {",
+              "const r = pm.response.json();",
+              "}",
+              "} catch (error) { pm.execution.setNextRequest(null); pm.test('Respuesta JSON con estructura válida', () => { throw error; }); }"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "21. Categoría en uso no se elimina",
+      "request": {
+        "method": "DELETE",
+        "url": "{{contenidoBaseUrl}}/api/categorias/{{cat1Id}}",
+        "auth": {
+          "type": "noauth"
+        },
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json, application/problem+json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "function verificar(nombre, fn) { pm.test(nombre, () => { try { fn(); } catch (error) { pm.execution.setNextRequest(null); throw error; } }); }",
+              "try {",
+              "verificar('HTTP 409', () => pm.response.to.have.status(409));",
+              "if (pm.response.code !== 409) { pm.execution.setNextRequest(null); } else {",
+              "const r = pm.response.json();",
+              "}",
+              "} catch (error) { pm.execution.setNextRequest(null); pm.test('Respuesta JSON con estructura válida', () => { throw error; }); }"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "22. Comentar 1",
+      "request": {
+        "method": "POST",
+        "url": "{{contenidoBaseUrl}}/api/temas/{{tema1Id}}/comentarios",
+        "auth": {
+          "type": "noauth"
+        },
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json, application/problem+json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"contenido\": \"Comentario 1 {{runId}}\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "function verificar(nombre, fn) { pm.test(nombre, () => { try { fn(); } catch (error) { pm.execution.setNextRequest(null); throw error; } }); }",
+              "try {",
+              "verificar('HTTP 201', () => pm.response.to.have.status(201));",
+              "if (pm.response.code !== 201) { pm.execution.setNextRequest(null); } else {",
+              "const r = pm.response.json();",
+              "if (r.id === undefined || r.id === null) throw new Error('Falta el campo id');",
+              "if (pm.response.code === 201) pm.variables.set('comentario1Id', r.id);",
+              "}",
+              "} catch (error) { pm.execution.setNextRequest(null); pm.test('Respuesta JSON con estructura válida', () => { throw error; }); }"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "23. Comentar 2",
+      "request": {
+        "method": "POST",
+        "url": "{{contenidoBaseUrl}}/api/temas/{{tema1Id}}/comentarios",
+        "auth": {
+          "type": "noauth"
+        },
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json, application/problem+json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenB}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"contenido\": \"Comentario 2 {{runId}}\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "function verificar(nombre, fn) { pm.test(nombre, () => { try { fn(); } catch (error) { pm.execution.setNextRequest(null); throw error; } }); }",
+              "try {",
+              "verificar('HTTP 201', () => pm.response.to.have.status(201));",
+              "if (pm.response.code !== 201) { pm.execution.setNextRequest(null); } else {",
+              "const r = pm.response.json();",
+              "if (r.id === undefined || r.id === null) throw new Error('Falta el campo id');",
+              "if (pm.response.code === 201) pm.variables.set('comentario2Id', r.id);",
+              "}",
+              "} catch (error) { pm.execution.setNextRequest(null); pm.test('Respuesta JSON con estructura válida', () => { throw error; }); }"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "24. Comentar 3",
+      "request": {
+        "method": "POST",
+        "url": "{{contenidoBaseUrl}}/api/temas/{{tema2Id}}/comentarios",
+        "auth": {
+          "type": "noauth"
+        },
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json, application/problem+json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenA}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"contenido\": \"Comentario 3 {{runId}}\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "function verificar(nombre, fn) { pm.test(nombre, () => { try { fn(); } catch (error) { pm.execution.setNextRequest(null); throw error; } }); }",
+              "try {",
+              "verificar('HTTP 201', () => pm.response.to.have.status(201));",
+              "if (pm.response.code !== 201) { pm.execution.setNextRequest(null); } else {",
+              "const r = pm.response.json();",
+              "if (r.id === undefined || r.id === null) throw new Error('Falta el campo id');",
+              "if (pm.response.code === 201) pm.variables.set('comentario3Id', r.id);",
+              "}",
+              "} catch (error) { pm.execution.setNextRequest(null); pm.test('Respuesta JSON con estructura válida', () => { throw error; }); }"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "25. Listar comentarios del tema",
+      "request": {
+        "method": "GET",
+        "url": "{{contenidoBaseUrl}}/api/temas/{{tema1Id}}/comentarios",
+        "auth": {
+          "type": "noauth"
+        },
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json, application/problem+json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenA}}"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "function verificar(nombre, fn) { pm.test(nombre, () => { try { fn(); } catch (error) { pm.execution.setNextRequest(null); throw error; } }); }",
+              "try {",
+              "verificar('HTTP 200', () => pm.response.to.have.status(200));",
+              "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); } else {",
+              "const r = pm.response.json();",
+              "verificar(\"Dos comentarios\", () => { pm.expect(r.length).to.eql(2); });",
+              "}",
+              "} catch (error) { pm.execution.setNextRequest(null); pm.test('Respuesta JSON con estructura válida', () => { throw error; }); }"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "26. Crear tema temporal para CRUD",
+      "request": {
+        "method": "POST",
+        "url": "{{contenidoBaseUrl}}/api/temas",
+        "auth": {
+          "type": "noauth"
+        },
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json, application/problem+json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenA}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"titulo\": \"Temporal {{runId}}\", \"contenido\": \"Texto\", \"categoriaId\": {{cat1Id}}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "function verificar(nombre, fn) { pm.test(nombre, () => { try { fn(); } catch (error) { pm.execution.setNextRequest(null); throw error; } }); }",
+              "try {",
+              "verificar('HTTP 201', () => pm.response.to.have.status(201));",
+              "if (pm.response.code !== 201) { pm.execution.setNextRequest(null); } else {",
+              "const r = pm.response.json();",
+              "if (r.id === undefined || r.id === null) throw new Error('Falta el campo id');",
+              "if (pm.response.code === 201) pm.variables.set('temporalId', r.id);",
+              "if (r.fechaCreacion === undefined || r.fechaCreacion === null) throw new Error('Falta el campo fechaCreacion');",
+              "if (pm.response.code === 201) pm.variables.set('fechaTema', r.fechaCreacion);",
+              "}",
+              "} catch (error) { pm.execution.setNextRequest(null); pm.test('Respuesta JSON con estructura válida', () => { throw error; }); }"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "27. Otro usuario no edita tema",
+      "request": {
+        "method": "PUT",
+        "url": "{{contenidoBaseUrl}}/api/temas/{{temporalId}}",
+        "auth": {
+          "type": "noauth"
+        },
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json, application/problem+json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenB}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"titulo\": \"Ajeno\", \"contenido\": \"Texto\", \"categoriaId\": {{cat1Id}}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "function verificar(nombre, fn) { pm.test(nombre, () => { try { fn(); } catch (error) { pm.execution.setNextRequest(null); throw error; } }); }",
+              "try {",
+              "verificar('HTTP 403', () => pm.response.to.have.status(403));",
+              "if (pm.response.code !== 403) { pm.execution.setNextRequest(null); } else {",
+              "const r = pm.response.json();",
+              "}",
+              "} catch (error) { pm.execution.setNextRequest(null); pm.test('Respuesta JSON con estructura válida', () => { throw error; }); }"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "28. Administrador no elimina tema ajeno",
+      "request": {
+        "method": "DELETE",
+        "url": "{{contenidoBaseUrl}}/api/temas/{{temporalId}}",
+        "auth": {
+          "type": "noauth"
+        },
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json, application/problem+json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "function verificar(nombre, fn) { pm.test(nombre, () => { try { fn(); } catch (error) { pm.execution.setNextRequest(null); throw error; } }); }",
+              "try {",
+              "verificar('HTTP 403', () => pm.response.to.have.status(403));",
+              "if (pm.response.code !== 403) { pm.execution.setNextRequest(null); } else {",
+              "const r = pm.response.json();",
+              "}",
+              "} catch (error) { pm.execution.setNextRequest(null); pm.test('Respuesta JSON con estructura válida', () => { throw error; }); }"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "29. Editar tema propio y mover categoría",
+      "request": {
+        "method": "PUT",
+        "url": "{{contenidoBaseUrl}}/api/temas/{{temporalId}}",
+        "auth": {
+          "type": "noauth"
+        },
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json, application/problem+json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenA}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"titulo\": \"Actualizado {{runId}}\", \"contenido\": \"Texto actualizado\", \"categoriaId\": {{cat2Id}}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "function verificar(nombre, fn) { pm.test(nombre, () => { try { fn(); } catch (error) { pm.execution.setNextRequest(null); throw error; } }); }",
+              "try {",
+              "verificar('HTTP 200', () => pm.response.to.have.status(200));",
+              "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); } else {",
+              "const r = pm.response.json();",
+              "verificar(\"Fecha inmutable\", () => { pm.expect(r.fechaCreacion).to.eql(pm.variables.get('fechaTema')); });",
+              "}",
+              "} catch (error) { pm.execution.setNextRequest(null); pm.test('Respuesta JSON con estructura válida', () => { throw error; }); }"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "30. Comentario ajeno en tema propio",
+      "request": {
+        "method": "POST",
+        "url": "{{contenidoBaseUrl}}/api/temas/{{temporalId}}/comentarios",
+        "auth": {
+          "type": "noauth"
+        },
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json, application/problem+json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenB}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"contenido\": \"Comentario temporal\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "function verificar(nombre, fn) { pm.test(nombre, () => { try { fn(); } catch (error) { pm.execution.setNextRequest(null); throw error; } }); }",
+              "try {",
+              "verificar('HTTP 201', () => pm.response.to.have.status(201));",
+              "if (pm.response.code !== 201) { pm.execution.setNextRequest(null); } else {",
+              "const r = pm.response.json();",
+              "if (r.id === undefined || r.id === null) throw new Error('Falta el campo id');",
+              "if (pm.response.code === 201) pm.variables.set('temporalComentarioId', r.id);",
+              "if (r.fechaCreacion === undefined || r.fechaCreacion === null) throw new Error('Falta el campo fechaCreacion');",
+              "if (pm.response.code === 201) pm.variables.set('fechaComentario', r.fechaCreacion);",
+              "}",
+              "} catch (error) { pm.execution.setNextRequest(null); pm.test('Respuesta JSON con estructura válida', () => { throw error; }); }"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "31. Consultar comentario",
+      "request": {
+        "method": "GET",
+        "url": "{{contenidoBaseUrl}}/api/comentarios/{{temporalComentarioId}}",
+        "auth": {
+          "type": "noauth"
+        },
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json, application/problem+json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenA}}"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "function verificar(nombre, fn) { pm.test(nombre, () => { try { fn(); } catch (error) { pm.execution.setNextRequest(null); throw error; } }); }",
+              "try {",
+              "verificar('HTTP 200', () => pm.response.to.have.status(200));",
+              "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); } else {",
+              "const r = pm.response.json();",
+              "}",
+              "} catch (error) { pm.execution.setNextRequest(null); pm.test('Respuesta JSON con estructura válida', () => { throw error; }); }"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "32. Dueño del tema no edita comentario ajeno",
+      "request": {
+        "method": "PUT",
+        "url": "{{contenidoBaseUrl}}/api/comentarios/{{temporalComentarioId}}",
+        "auth": {
+          "type": "noauth"
+        },
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json, application/problem+json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenA}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"contenido\": \"Ajeno\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "function verificar(nombre, fn) { pm.test(nombre, () => { try { fn(); } catch (error) { pm.execution.setNextRequest(null); throw error; } }); }",
+              "try {",
+              "verificar('HTTP 403', () => pm.response.to.have.status(403));",
+              "if (pm.response.code !== 403) { pm.execution.setNextRequest(null); } else {",
+              "const r = pm.response.json();",
+              "}",
+              "} catch (error) { pm.execution.setNextRequest(null); pm.test('Respuesta JSON con estructura válida', () => { throw error; }); }"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "33. Administrador no borra comentario ajeno",
+      "request": {
+        "method": "DELETE",
+        "url": "{{contenidoBaseUrl}}/api/comentarios/{{temporalComentarioId}}",
+        "auth": {
+          "type": "noauth"
+        },
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json, application/problem+json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "function verificar(nombre, fn) { pm.test(nombre, () => { try { fn(); } catch (error) { pm.execution.setNextRequest(null); throw error; } }); }",
+              "try {",
+              "verificar('HTTP 403', () => pm.response.to.have.status(403));",
+              "if (pm.response.code !== 403) { pm.execution.setNextRequest(null); } else {",
+              "const r = pm.response.json();",
+              "}",
+              "} catch (error) { pm.execution.setNextRequest(null); pm.test('Respuesta JSON con estructura válida', () => { throw error; }); }"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "34. Autor edita comentario",
+      "request": {
+        "method": "PUT",
+        "url": "{{contenidoBaseUrl}}/api/comentarios/{{temporalComentarioId}}",
+        "auth": {
+          "type": "noauth"
+        },
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json, application/problem+json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenB}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"contenido\": \"Actualizado por su autor\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "function verificar(nombre, fn) { pm.test(nombre, () => { try { fn(); } catch (error) { pm.execution.setNextRequest(null); throw error; } }); }",
+              "try {",
+              "verificar('HTTP 200', () => pm.response.to.have.status(200));",
+              "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); } else {",
+              "const r = pm.response.json();",
+              "verificar(\"Fecha de comentario inmutable\", () => { pm.expect(r.fechaCreacion).to.eql(pm.variables.get('fechaComentario')); });",
+              "}",
+              "} catch (error) { pm.execution.setNextRequest(null); pm.test('Respuesta JSON con estructura válida', () => { throw error; }); }"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "35. Comentario no permite cambiar tema",
+      "request": {
+        "method": "PUT",
+        "url": "{{contenidoBaseUrl}}/api/comentarios/{{temporalComentarioId}}",
+        "auth": {
+          "type": "noauth"
+        },
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json, application/problem+json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenB}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"contenido\": \"Inválido\", \"temaId\": {{tema1Id}}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "function verificar(nombre, fn) { pm.test(nombre, () => { try { fn(); } catch (error) { pm.execution.setNextRequest(null); throw error; } }); }",
+              "try {",
+              "verificar('HTTP 400', () => pm.response.to.have.status(400));",
+              "if (pm.response.code !== 400) { pm.execution.setNextRequest(null); } else {",
+              "const r = pm.response.json();",
+              "}",
+              "} catch (error) { pm.execution.setNextRequest(null); pm.test('Respuesta JSON con estructura válida', () => { throw error; }); }"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "36. Autor borra comentario",
+      "request": {
+        "method": "DELETE",
+        "url": "{{contenidoBaseUrl}}/api/comentarios/{{temporalComentarioId}}",
+        "auth": {
+          "type": "noauth"
+        },
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json, application/problem+json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenB}}"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "function verificar(nombre, fn) { pm.test(nombre, () => { try { fn(); } catch (error) { pm.execution.setNextRequest(null); throw error; } }); }",
+              "try {",
+              "verificar('HTTP 204', () => pm.response.to.have.status(204));",
+              "if (pm.response.code !== 204) { pm.execution.setNextRequest(null); } else {",
+              "}",
+              "} catch (error) { pm.execution.setNextRequest(null); pm.test('Respuesta JSON con estructura válida', () => { throw error; }); }"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "37. Comentario borrado no existe",
+      "request": {
+        "method": "GET",
+        "url": "{{contenidoBaseUrl}}/api/comentarios/{{temporalComentarioId}}",
+        "auth": {
+          "type": "noauth"
+        },
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json, application/problem+json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenA}}"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "function verificar(nombre, fn) { pm.test(nombre, () => { try { fn(); } catch (error) { pm.execution.setNextRequest(null); throw error; } }); }",
+              "try {",
+              "verificar('HTTP 404', () => pm.response.to.have.status(404));",
+              "if (pm.response.code !== 404) { pm.execution.setNextRequest(null); } else {",
+              "const r = pm.response.json();",
+              "}",
+              "} catch (error) { pm.execution.setNextRequest(null); pm.test('Respuesta JSON con estructura válida', () => { throw error; }); }"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "38. Otro comentario para cascada",
+      "request": {
+        "method": "POST",
+        "url": "{{contenidoBaseUrl}}/api/temas/{{temporalId}}/comentarios",
+        "auth": {
+          "type": "noauth"
+        },
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json, application/problem+json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenB}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"contenido\": \"Eliminar con el tema\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "function verificar(nombre, fn) { pm.test(nombre, () => { try { fn(); } catch (error) { pm.execution.setNextRequest(null); throw error; } }); }",
+              "try {",
+              "verificar('HTTP 201', () => pm.response.to.have.status(201));",
+              "if (pm.response.code !== 201) { pm.execution.setNextRequest(null); } else {",
+              "const r = pm.response.json();",
+              "if (r.id === undefined || r.id === null) throw new Error('Falta el campo id');",
+              "if (pm.response.code === 201) pm.variables.set('cascadaId', r.id);",
+              "}",
+              "} catch (error) { pm.execution.setNextRequest(null); pm.test('Respuesta JSON con estructura válida', () => { throw error; }); }"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "39. Borrar tema propio con comentarios",
+      "request": {
+        "method": "DELETE",
+        "url": "{{contenidoBaseUrl}}/api/temas/{{temporalId}}",
+        "auth": {
+          "type": "noauth"
+        },
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json, application/problem+json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenA}}"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "function verificar(nombre, fn) { pm.test(nombre, () => { try { fn(); } catch (error) { pm.execution.setNextRequest(null); throw error; } }); }",
+              "try {",
+              "verificar('HTTP 204', () => pm.response.to.have.status(204));",
+              "if (pm.response.code !== 204) { pm.execution.setNextRequest(null); } else {",
+              "}",
+              "} catch (error) { pm.execution.setNextRequest(null); pm.test('Respuesta JSON con estructura válida', () => { throw error; }); }"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "40. Comentario eliminado en cascada",
+      "request": {
+        "method": "GET",
+        "url": "{{contenidoBaseUrl}}/api/comentarios/{{cascadaId}}",
+        "auth": {
+          "type": "noauth"
+        },
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json, application/problem+json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenB}}"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "function verificar(nombre, fn) { pm.test(nombre, () => { try { fn(); } catch (error) { pm.execution.setNextRequest(null); throw error; } }); }",
+              "try {",
+              "verificar('HTTP 404', () => pm.response.to.have.status(404));",
+              "if (pm.response.code !== 404) { pm.execution.setNextRequest(null); } else {",
+              "const r = pm.response.json();",
+              "}",
+              "} catch (error) { pm.execution.setNextRequest(null); pm.test('Respuesta JSON con estructura válida', () => { throw error; }); }"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "41. Tema eliminado",
+      "request": {
+        "method": "GET",
+        "url": "{{contenidoBaseUrl}}/api/temas/{{temporalId}}",
+        "auth": {
+          "type": "noauth"
+        },
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json, application/problem+json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenA}}"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "function verificar(nombre, fn) { pm.test(nombre, () => { try { fn(); } catch (error) { pm.execution.setNextRequest(null); throw error; } }); }",
+              "try {",
+              "verificar('HTTP 404', () => pm.response.to.have.status(404));",
+              "if (pm.response.code !== 404) { pm.execution.setNextRequest(null); } else {",
+              "const r = pm.response.json();",
+              "}",
+              "} catch (error) { pm.execution.setNextRequest(null); pm.test('Respuesta JSON con estructura válida', () => { throw error; }); }"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "42. Crear categoría temporal",
+      "request": {
+        "method": "POST",
+        "url": "{{contenidoBaseUrl}}/api/categorias",
+        "auth": {
+          "type": "noauth"
+        },
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json, application/problem+json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"nombre\": \"Temporal {{runId}}\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "function verificar(nombre, fn) { pm.test(nombre, () => { try { fn(); } catch (error) { pm.execution.setNextRequest(null); throw error; } }); }",
+              "try {",
+              "verificar('HTTP 201', () => pm.response.to.have.status(201));",
+              "if (pm.response.code !== 201) { pm.execution.setNextRequest(null); } else {",
+              "const r = pm.response.json();",
+              "if (r.id === undefined || r.id === null) throw new Error('Falta el campo id');",
+              "if (pm.response.code === 201) pm.variables.set('catTemporalId', r.id);",
+              "}",
+              "} catch (error) { pm.execution.setNextRequest(null); pm.test('Respuesta JSON con estructura válida', () => { throw error; }); }"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "43. Editar categoría temporal",
+      "request": {
+        "method": "PUT",
+        "url": "{{contenidoBaseUrl}}/api/categorias/{{catTemporalId}}",
+        "auth": {
+          "type": "noauth"
+        },
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json, application/problem+json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"nombre\": \"Temporal editada {{runId}}\", \"descripcion\": \"Editada\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "function verificar(nombre, fn) { pm.test(nombre, () => { try { fn(); } catch (error) { pm.execution.setNextRequest(null); throw error; } }); }",
+              "try {",
+              "verificar('HTTP 200', () => pm.response.to.have.status(200));",
+              "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); } else {",
+              "const r = pm.response.json();",
+              "}",
+              "} catch (error) { pm.execution.setNextRequest(null); pm.test('Respuesta JSON con estructura válida', () => { throw error; }); }"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "44. Consultar categoría temporal",
+      "request": {
+        "method": "GET",
+        "url": "{{contenidoBaseUrl}}/api/categorias/{{catTemporalId}}",
+        "auth": {
+          "type": "noauth"
+        },
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json, application/problem+json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenA}}"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "function verificar(nombre, fn) { pm.test(nombre, () => { try { fn(); } catch (error) { pm.execution.setNextRequest(null); throw error; } }); }",
+              "try {",
+              "verificar('HTTP 200', () => pm.response.to.have.status(200));",
+              "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); } else {",
+              "const r = pm.response.json();",
+              "}",
+              "} catch (error) { pm.execution.setNextRequest(null); pm.test('Respuesta JSON con estructura válida', () => { throw error; }); }"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "45. Eliminar categoría vacía",
+      "request": {
+        "method": "DELETE",
+        "url": "{{contenidoBaseUrl}}/api/categorias/{{catTemporalId}}",
+        "auth": {
+          "type": "noauth"
+        },
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json, application/problem+json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "function verificar(nombre, fn) { pm.test(nombre, () => { try { fn(); } catch (error) { pm.execution.setNextRequest(null); throw error; } }); }",
+              "try {",
+              "verificar('HTTP 204', () => pm.response.to.have.status(204));",
+              "if (pm.response.code !== 204) { pm.execution.setNextRequest(null); } else {",
+              "}",
+              "} catch (error) { pm.execution.setNextRequest(null); pm.test('Respuesta JSON con estructura válida', () => { throw error; }); }"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "46. Categoría eliminada no existe",
+      "request": {
+        "method": "GET",
+        "url": "{{contenidoBaseUrl}}/api/categorias/{{catTemporalId}}",
+        "auth": {
+          "type": "noauth"
+        },
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json, application/problem+json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenA}}"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "function verificar(nombre, fn) { pm.test(nombre, () => { try { fn(); } catch (error) { pm.execution.setNextRequest(null); throw error; } }); }",
+              "try {",
+              "verificar('HTTP 404', () => pm.response.to.have.status(404));",
+              "if (pm.response.code !== 404) { pm.execution.setNextRequest(null); } else {",
+              "const r = pm.response.json();",
+              "}",
+              "} catch (error) { pm.execution.setNextRequest(null); pm.test('Respuesta JSON con estructura válida', () => { throw error; }); }"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "47. Sin token en contenido",
+      "request": {
+        "method": "GET",
+        "url": "{{contenidoBaseUrl}}/api/categorias",
+        "auth": {
+          "type": "noauth"
+        },
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json, application/problem+json"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "function verificar(nombre, fn) { pm.test(nombre, () => { try { fn(); } catch (error) { pm.execution.setNextRequest(null); throw error; } }); }",
+              "try {",
+              "verificar('HTTP 401', () => pm.response.to.have.status(401));",
+              "if (pm.response.code !== 401) { pm.execution.setNextRequest(null); } else {",
+              "const r = pm.response.json();",
+              "}",
+              "} catch (error) { pm.execution.setNextRequest(null); pm.test('Respuesta JSON con estructura válida', () => { throw error; }); }"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "48. Registrar cuenta para baja lógica",
+      "request": {
+        "method": "POST",
+        "url": "{{usuariosBaseUrl}}/api/auth/registro",
+        "auth": {
+          "type": "noauth"
+        },
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json, application/problem+json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"nombre\": \"Temporal Postman\", \"correo\": \"{{correoTemporal}}\", \"password\": \"{{passwordPrueba}}\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "function verificar(nombre, fn) { pm.test(nombre, () => { try { fn(); } catch (error) { pm.execution.setNextRequest(null); throw error; } }); }",
+              "try {",
+              "verificar('HTTP 201', () => pm.response.to.have.status(201));",
+              "if (pm.response.code !== 201) { pm.execution.setNextRequest(null); } else {",
+              "const r = pm.response.json();",
+              "if (r.id === undefined || r.id === null) throw new Error('Falta el campo id');",
+              "if (pm.response.code === 201) pm.variables.set('bajaId', r.id);",
+              "}",
+              "} catch (error) { pm.execution.setNextRequest(null); pm.test('Respuesta JSON con estructura válida', () => { throw error; }); }"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "49. Login cuenta para baja",
+      "request": {
+        "method": "POST",
+        "url": "{{usuariosBaseUrl}}/api/auth/login",
+        "auth": {
+          "type": "noauth"
+        },
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json, application/problem+json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"correo\": \"{{correoTemporal}}\", \"password\": \"{{passwordPrueba}}\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "function verificar(nombre, fn) { pm.test(nombre, () => { try { fn(); } catch (error) { pm.execution.setNextRequest(null); throw error; } }); }",
+              "try {",
+              "verificar('HTTP 200', () => pm.response.to.have.status(200));",
+              "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); } else {",
+              "const r = pm.response.json();",
+              "if (r.accessToken === undefined || r.accessToken === null) throw new Error('Falta el campo accessToken');",
+              "if (pm.response.code === 200) pm.variables.set('tokenBaja', r.accessToken);",
+              "}",
+              "} catch (error) { pm.execution.setNextRequest(null); pm.test('Respuesta JSON con estructura válida', () => { throw error; }); }"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "50. Cuenta activa accede a contenido",
+      "request": {
+        "method": "GET",
+        "url": "{{contenidoBaseUrl}}/api/categorias",
+        "auth": {
+          "type": "noauth"
+        },
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json, application/problem+json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenBaja}}"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "function verificar(nombre, fn) { pm.test(nombre, () => { try { fn(); } catch (error) { pm.execution.setNextRequest(null); throw error; } }); }",
+              "try {",
+              "verificar('HTTP 200', () => pm.response.to.have.status(200));",
+              "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); } else {",
+              "const r = pm.response.json();",
+              "}",
+              "} catch (error) { pm.execution.setNextRequest(null); pm.test('Respuesta JSON con estructura válida', () => { throw error; }); }"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "51. Desactivar cuenta temporal propia",
+      "request": {
+        "method": "DELETE",
+        "url": "{{usuariosBaseUrl}}/api/usuarios/{{bajaId}}",
+        "auth": {
+          "type": "noauth"
+        },
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json, application/problem+json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenBaja}}"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "function verificar(nombre, fn) { pm.test(nombre, () => { try { fn(); } catch (error) { pm.execution.setNextRequest(null); throw error; } }); }",
+              "try {",
+              "verificar('HTTP 204', () => pm.response.to.have.status(204));",
+              "if (pm.response.code !== 204) { pm.execution.setNextRequest(null); } else {",
+              "}",
+              "} catch (error) { pm.execution.setNextRequest(null); pm.test('Respuesta JSON con estructura válida', () => { throw error; }); }"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "52. Token de cuenta desactivada rechazado",
+      "request": {
+        "method": "GET",
+        "url": "{{contenidoBaseUrl}}/api/categorias",
+        "auth": {
+          "type": "noauth"
+        },
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json, application/problem+json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tokenBaja}}"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "function verificar(nombre, fn) { pm.test(nombre, () => { try { fn(); } catch (error) { pm.execution.setNextRequest(null); throw error; } }); }",
+              "try {",
+              "verificar('HTTP 401', () => pm.response.to.have.status(401));",
+              "if (pm.response.code !== 401) { pm.execution.setNextRequest(null); } else {",
+              "const r = pm.response.json();",
+              "}",
+              "} catch (error) { pm.execution.setNextRequest(null); pm.test('Respuesta JSON con estructura válida', () => { throw error; }); }"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "53. Cuenta inactiva no se consulta",
+      "request": {
+        "method": "GET",
+        "url": "{{usuariosBaseUrl}}/api/usuarios/{{bajaId}}",
+        "auth": {
+          "type": "noauth"
+        },
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json, application/problem+json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "function verificar(nombre, fn) { pm.test(nombre, () => { try { fn(); } catch (error) { pm.execution.setNextRequest(null); throw error; } }); }",
+              "try {",
+              "verificar('HTTP 404', () => pm.response.to.have.status(404));",
+              "if (pm.response.code !== 404) { pm.execution.setNextRequest(null); } else {",
+              "const r = pm.response.json();",
+              "}",
+              "} catch (error) { pm.execution.setNextRequest(null); pm.test('Respuesta JSON con estructura válida', () => { throw error; }); }"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "54. Cuenta inactiva no inicia sesión",
+      "request": {
+        "method": "POST",
+        "url": "{{usuariosBaseUrl}}/api/auth/login",
+        "auth": {
+          "type": "noauth"
+        },
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json, application/problem+json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"correo\": \"{{correoTemporal}}\", \"password\": \"{{passwordPrueba}}\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "function verificar(nombre, fn) { pm.test(nombre, () => { try { fn(); } catch (error) { pm.execution.setNextRequest(null); throw error; } }); }",
+              "try {",
+              "verificar('HTTP 401', () => pm.response.to.have.status(401));",
+              "if (pm.response.code !== 401) { pm.execution.setNextRequest(null); } else {",
+              "const r = pm.response.json();",
+              "}",
+              "} catch (error) { pm.execution.setNextRequest(null); pm.test('Respuesta JSON con estructura válida', () => { throw error; }); }"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

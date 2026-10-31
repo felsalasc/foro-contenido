@@ -92,7 +92,7 @@
 
 **Interfaces:** Código y scripts propios; colección inicia sesión por HTTP en usuarios, usa accessToken solo como variable de ejecución y prueba contenido. No necesita compilar usuarios para construir contenido. El video y la matriz final abarcan ambos repositorios.
 
-- [ ] Ejecutar .\mvnw.cmd clean verify sin usuarios activo: suite verde con servidor stub.
+- [x] Ejecutar .\mvnw.cmd clean verify sin usuarios activo: suite verde con servidor stub.
 - [ ] Preparar esquema Oracle propio de contenido, ejecutar estructura y datos parametrizados; contar cinco categorías, al menos tres temas y tres comentarios. Verificar búsqueda real, incluyendo mayúsculas, acentos, % y _, sobre el tipo de columna elegido para contenido. Ajustar tipo y consultas si la prueba Oracle detecta incompatibilidades.
 - [ ] Ejecutar ambas aplicaciones reales con sus esquemas. Probar Postman: login, me, categorías por administrador, publicar, buscar, comentar, editar, eliminar y restricciones 400/401/403/404/409. Desactivar autor en usuarios y comprobar rechazo del token anterior en contenido; detener usuarios y comprobar 503 sin escrituras. Reiniciar servicios y verificar persistencia Oracle.
 - [ ] Revisar git diff --check y git status --short de cada repositorio. Confirmar que cada JAR se genera desde su raíz, que no hay dependencia de rutas del otro repositorio y que los README explican la dependencia HTTP en ejecución.

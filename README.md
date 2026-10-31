@@ -196,3 +196,14 @@ La prueba automatizada carga el SQL de datos en H2 con IDs simulados 41/73/109 y
 - [Verificación](docs/verificacion.md).
 
 Rama inicial de trabajo: desarrollo. Los repositorios remotos y su publicación se prepararán con autorización del usuario.
+
+## Preparación para Oracle y entrega
+
+La colección y entorno propios están en [postman/](postman/README.md). Las credenciales del administrador se completan solo localmente; los tokens usan variables de ejecución. Importar y ejecutar la colección completa en Collection Runner. La revisión de JSON/JavaScript y sus flujos HTTP locales ya se realizó; las aserciones de Postman real y Oracle siguen pendientes.
+
+- [Conexión, esquema y pasos de persistencia Oracle](docs/oracle-y-entrega.md).
+- [Consultas SQL de verificación sin secretos](database/03_verificacion.sql).
+- [Matriz de evidencia y pendientes](docs/matriz-cumplimiento.md).
+- [Guion conjunto de video de 8–9 minutos](docs/guion-video.md).
+
+Los esquemas y tablas Oracle no se modificaron durante esta preparación. No se han publicado remotos, generado una entrega final ni grabado/subido el video. El alcance sigue siendo exclusivamente backend en dos repositorios separados.
