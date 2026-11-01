@@ -21,3 +21,5 @@ La búsqueda utiliza 100%_ como literal y combina categoría. El dueño del tema
 Referencias: [variables locales de Postman](https://learning.postman.com/docs/use/send-requests/variables/variables) y [Newman](https://learning.postman.com/docs/collections/using-newman-cli/installing-running-newman), herramienta opcional.
 
 El recorrido programa su parada ante estados inesperados, aserciones fallidas o respuestas JSON/estructura inválidas. El login de administrador construye su cuerpo con JSON.stringify para conservar comillas y barras de la contraseña. Esas guardas tienen ocho comprobaciones Node focalizadas compartidas entre las dos colecciones; la verificación en el sandbox real sigue pendiente.
+
+Actualización del 31 de octubre de 2026: el usuario ejecutó esta colección en el Runner real, con los servidores iniciados en perfil oracle: 66 aserciones aprobadas y cero errores/fallos visibles. Ver [evidencia del Runner](../docs/evidencias/2026-10-31-postman-contenido.md). Las menciones previas a Postman pendiente describen la preparación anterior. Persistencia tras reiniciar y comprobaciones Oracle adicionales continúan pendientes.

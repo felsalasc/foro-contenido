@@ -169,3 +169,9 @@ La integración arrancó ambos JAR por separado, con claves/contraseñas aleator
 - Oracle real, bloqueos, persistencia tras reiniciar, runtime/aserciones Postman, enlaces remotos, video y entrega final permanecen pendientes. No se asignan puntos de la pauta por anticipado ni se marca cerrado ese bloque.
 
 Actualización: BIBLIOTECA activa según el usuario; FORO_USUARIOS y FORO_CONTENIDO aún sin crear. La revisión de colecciones identificó la parada incompleta ante aserciones; corregida junto con el escape JSON de credenciales. Ocho pruebas focalizadas en Node reprodujeron rol/estructura/JSON inválidos y contraseña con comillas/barras en ambas colecciones, y aprobaron tras corregir. Usan un doble mínimo de pm.test/variables y no sustituyen ejecutar Postman. Recompilación de scripts y 85 flujos HTTP finales aprobados. Oracle no se ha conectado ni modificado.
+
+## Evidencia aportada: Postman de contenido sobre Oracle
+
+31 de octubre de 2026: tras confirmar arranque de ambos JAR con perfil oracle, el usuario aportó el resumen de contenido: 66 aserciones aprobadas, cero fallos/omitidas/errores, una iteración. La colección tiene 54 solicitudes. Se conserva la captura sin secretos en [evidencias/2026-10-31-postman-contenido.md](evidencias/2026-10-31-postman-contenido.md).
+
+El Runner real de contenido deja de estar pendiente; usuarios ya cuenta con evidencia propia de 31 solicitudes y 36 aserciones aprobadas. Restan conteos/relaciones SQL finales, reinicios y persistencia, prueba CLOB larga, caída de usuarios sin escrituras, concurrencia Oracle y entrega. La evidencia aportada no se extrapola a comprobaciones todavía no ejecutadas.
