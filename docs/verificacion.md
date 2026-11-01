@@ -175,3 +175,7 @@ Actualización: BIBLIOTECA activa según el usuario; FORO_USUARIOS y FORO_CONTEN
 31 de octubre de 2026: tras confirmar arranque de ambos JAR con perfil oracle, el usuario aportó el resumen de contenido: 66 aserciones aprobadas, cero fallos/omitidas/errores, una iteración. La colección tiene 54 solicitudes. Se conserva la captura sin secretos en [evidencias/2026-10-31-postman-contenido.md](evidencias/2026-10-31-postman-contenido.md).
 
 El Runner real de contenido deja de estar pendiente; usuarios ya cuenta con evidencia propia de 31 solicitudes y 36 aserciones aprobadas. Restan conteos/relaciones SQL finales, reinicios y persistencia, prueba CLOB larga, caída de usuarios sin escrituras, concurrencia Oracle y entrega. La evidencia aportada no se extrapola a comprobaciones todavía no ejecutadas.
+
+## Conteos Oracle confirmados por SQL — antes del reinicio
+
+31 de octubre de 2026, evidencia aportada por el usuario: CATEGORIAS: 10; TEMAS: 3; COMENTARIOS: 3. Se cumplen los mínimos de cinco categorías y tres registros por tabla. Captura conservada en [evidencias/2026-10-31-oracle-conteos-contenido.md](evidencias/2026-10-31-oracle-conteos-contenido.md). El siguiente paso es reiniciar ambos servidores conservando sus variables y repetir las consultas sin volver a ejecutar las colecciones, para no agregar datos nuevos. Persistencia tras reinicio, integridad/bloqueos y verificaciones adicionales continúan pendientes.
