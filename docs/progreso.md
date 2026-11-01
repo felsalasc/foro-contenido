@@ -126,3 +126,7 @@ El Runner real de contenido deja de estar pendiente; usuarios ya cuenta con evid
 ## Persistencia tras reiniciar aplicaciones — confirmación del usuario
 
 31 de octubre de 2026: el usuario confirmó que ambas consultas SQL mantienen los conteos anteriores tras el reinicio guiado de los JAR, sin repetir colecciones. 10 categorías, 3 temas y 3 comentarios. Ver [confirmación y límites de evidencia](evidencias/2026-10-31-oracle-reinicio.md). No hay captura posterior todavía ni comprobación directa del agente. Se registra conservación de conteos al reiniciar aplicaciones; no se extrapola a reinicio del servicio Oracle ni a igualdad de cada campo. Las comprobaciones de integridad, búsqueda CLOB larga, caída de identidad y concurrencia Oracle siguen pendientes.
+
+## Relaciones Oracle sin huérfanos
+
+31 de octubre de 2026: captura SQL aportada por el usuario confirma 0 temas sin categoría y 0 comentarios sin tema. Evidencia en [evidencias/2026-10-31-oracle-integridad.md](evidencias/2026-10-31-oracle-integridad.md). Restan metadatos de FK, búsqueda CLOB larga, caída de identidad sin escrituras y concurrencia/bloqueos; esta consulta no se extrapola a esos casos.
