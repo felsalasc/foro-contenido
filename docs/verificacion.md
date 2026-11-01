@@ -179,3 +179,7 @@ El Runner real de contenido deja de estar pendiente; usuarios ya cuenta con evid
 ## Conteos Oracle confirmados por SQL — antes del reinicio
 
 31 de octubre de 2026, evidencia aportada por el usuario: CATEGORIAS: 10; TEMAS: 3; COMENTARIOS: 3. Se cumplen los mínimos de cinco categorías y tres registros por tabla. Captura conservada en [evidencias/2026-10-31-oracle-conteos-contenido.md](evidencias/2026-10-31-oracle-conteos-contenido.md). El siguiente paso es reiniciar ambos servidores conservando sus variables y repetir las consultas sin volver a ejecutar las colecciones, para no agregar datos nuevos. Persistencia tras reinicio, integridad/bloqueos y verificaciones adicionales continúan pendientes.
+
+## Persistencia tras reiniciar aplicaciones — confirmación del usuario
+
+31 de octubre de 2026: el usuario confirmó que ambas consultas SQL mantienen los conteos anteriores tras el reinicio guiado de los JAR, sin repetir colecciones. 10 categorías, 3 temas y 3 comentarios. Ver [confirmación y límites de evidencia](evidencias/2026-10-31-oracle-reinicio.md). No hay captura posterior todavía ni comprobación directa del agente. Se registra conservación de conteos al reiniciar aplicaciones; no se extrapola a reinicio del servicio Oracle ni a igualdad de cada campo. Las comprobaciones de integridad, búsqueda CLOB larga, caída de identidad y concurrencia Oracle siguen pendientes.
