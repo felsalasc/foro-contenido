@@ -31,3 +31,5 @@ Importar [foro-contenido-oracle-clob.postman_collection.json](foro-contenido-ora
 El contenido supera 9500 caracteres y la coincidencia está al final, fuera del título. Un señuelo distinto comprueba que % y _ no se interpreten como comodines; también se comprueban !, mayúsculas y acentos. La lectura compara el texto completo. Al terminar borra ambos temas y consulta sus IDs para exigir 404, conservando las cantidades originales.
 
 Si la ejecución se detiene por un fallo antes de limpiar, pueden permanecer sus temas temporales. Revisar sus respuestas/IDs y eliminarlos con su autor después de diagnosticar; no borrar registros por un prefijo general. Los tokens y contraseñas permanecen solo en variables locales de esa ejecución. Requiere servidores en perfil oracle para acreditar Oracle; el control local H2 no sustituye ese resultado.
+
+Actualización CLOB: el usuario ejecutó la colección adicional contra sus servidores Oracle, con 20 aserciones aprobadas y cero fallos/errores; ver [evidencia CLOB](../docs/evidencias/2026-10-31-oracle-clob.md).
