@@ -1,0 +1,494 @@
+{
+  "info": {
+    "name": "Foro contenido — verificación CLOB Oracle",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Ejecutar completa con el entorno privado ya usado (usuariosBaseUrl, contenidoBaseUrl, adminCorreo, adminPassword). Requiere categorías existentes y servidores en perfil Oracle para acreditar ese motor. Crea dos temas temporales del administrador y los borra al finalizar. Compara contenido completo, subcadena después del carácter 9500, acentos, mayúsculas y %/_/! literales con un señuelo que coincidiría si se trataran como comodines. No guarda credenciales ni tokens. Si se detiene antes de limpiar, revisar los temas Temporales Oracle creados por esa ejecución antes de eliminarlos por su autor."
+  },
+  "item": [
+    {
+      "name": "01. Login administrador",
+      "request": {
+        "method": "POST",
+        "url": "{{usuariosBaseUrl}}/api/auth/login",
+        "auth": {
+          "type": "noauth"
+        },
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json, application/problem+json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{{adminLoginJson}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if (!pm.environment.get('adminCorreo') || !pm.environment.get('adminPassword')) { pm.execution.setNextRequest(null); throw new Error('Configurar credenciales privadas del administrador de la API'); }",
+              "pm.variables.set('adminLoginJson', JSON.stringify({correo: pm.environment.get('adminCorreo'), password: pm.environment.get('adminPassword')}));",
+              "const id = pm.variables.replaceIn('{{$guid}}').replace(/-/g,'').slice(0,16);",
+              "pm.variables.set('runId', id);",
+              "pm.variables.set('contenidoLargo', 'x'.repeat(9500) + ' BÚSQUEDA_SQL%_!-' + id + ' fin');",
+              "pm.variables.set('contenidoSenuelo', 'x'.repeat(9500) + ' BÚSQUEDAxSQLabcZ!-' + id + ' fin');",
+              "pm.variables.set('textoCodificado', encodeURIComponent('búsqueda_sql%_!-' + id));",
+              "pm.variables.set('textoSinAcento', encodeURIComponent('busqueda_sql%_!-' + id));"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "function verificar(nombre, fn) { pm.test(nombre, () => { try { fn(); } catch (error) { pm.execution.setNextRequest(null); throw error; } }); }",
+              "try {",
+              "verificar('HTTP 200', () => pm.response.to.have.status(200));",
+              "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); } else {",
+              "const r = pm.response.json();",
+              "if (r.accessToken === undefined || r.accessToken === null) throw new Error('Falta el campo accessToken');",
+              "if (pm.response.code === 200) pm.variables.set('adminToken', r.accessToken);",
+              "if (r.usuario.id === undefined || r.usuario.id === null) throw new Error('Falta el campo usuario.id');",
+              "if (pm.response.code === 200) pm.variables.set('adminId', r.usuario.id);",
+              "verificar(\"Administrador vigente\", () => { pm.expect(r.usuario.rol).to.eql('ADMINISTRADOR'); });",
+              "}",
+              "} catch (error) { pm.execution.setNextRequest(null); pm.test('Respuesta JSON con estructura válida', () => { throw error; }); }"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "02. Elegir categoría existente",
+      "request": {
+        "method": "GET",
+        "url": "{{contenidoBaseUrl}}/api/categorias",
+        "auth": {
+          "type": "noauth"
+        },
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json, application/problem+json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "function verificar(nombre, fn) { pm.test(nombre, () => { try { fn(); } catch (error) { pm.execution.setNextRequest(null); throw error; } }); }",
+              "try {",
+              "verificar('HTTP 200', () => pm.response.to.have.status(200));",
+              "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); } else {",
+              "const r = pm.response.json();",
+              "verificar(\"Hay categor\\u00eda disponible\", () => { pm.expect(r.length).to.be.above(0); pm.variables.set('categoriaId', r[0].id); });",
+              "}",
+              "} catch (error) { pm.execution.setNextRequest(null); pm.test('Respuesta JSON con estructura válida', () => { throw error; }); }"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "03. Publicar texto largo con coincidencia final",
+      "request": {
+        "method": "POST",
+        "url": "{{contenidoBaseUrl}}/api/temas",
+        "auth": {
+          "type": "noauth"
+        },
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json, application/problem+json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{{temaLargoJson}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const cat = Number(pm.variables.get('categoriaId'));",
+              "if (!Number.isSafeInteger(cat) || cat <= 0) { pm.execution.setNextRequest(null); throw new Error('Falta categoría válida'); }",
+              "pm.variables.set('temaLargoJson', JSON.stringify({titulo:'Temporal Oracle CLOB ' + pm.variables.get('runId'), contenido:pm.variables.get('contenidoLargo'), categoriaId:cat}));",
+              "pm.variables.set('temaSenueloJson', JSON.stringify({titulo:'Temporal Oracle señuelo ' + pm.variables.get('runId'), contenido:pm.variables.get('contenidoSenuelo'), categoriaId:cat}));"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "function verificar(nombre, fn) { pm.test(nombre, () => { try { fn(); } catch (error) { pm.execution.setNextRequest(null); throw error; } }); }",
+              "try {",
+              "verificar('HTTP 201', () => pm.response.to.have.status(201));",
+              "if (pm.response.code !== 201) { pm.execution.setNextRequest(null); } else {",
+              "const r = pm.response.json();",
+              "if (r.id === undefined || r.id === null) throw new Error('Falta el campo id');",
+              "if (pm.response.code === 201) pm.variables.set('largoId', r.id);",
+              "verificar(\"Contenido \\u00edntegro al crear\", () => { pm.expect(r.contenido).to.eql(pm.variables.get('contenidoLargo')); });",
+              "verificar(\"Autor de identidad\", () => { pm.expect(r.autorId).to.eql(Number(pm.variables.get('adminId'))); });",
+              "}",
+              "} catch (error) { pm.execution.setNextRequest(null); pm.test('Respuesta JSON con estructura válida', () => { throw error; }); }"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "04. Publicar señuelo para detectar comodines",
+      "request": {
+        "method": "POST",
+        "url": "{{contenidoBaseUrl}}/api/temas",
+        "auth": {
+          "type": "noauth"
+        },
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json, application/problem+json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{{temaSenueloJson}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "function verificar(nombre, fn) { pm.test(nombre, () => { try { fn(); } catch (error) { pm.execution.setNextRequest(null); throw error; } }); }",
+              "try {",
+              "verificar('HTTP 201', () => pm.response.to.have.status(201));",
+              "if (pm.response.code !== 201) { pm.execution.setNextRequest(null); } else {",
+              "const r = pm.response.json();",
+              "if (r.id === undefined || r.id === null) throw new Error('Falta el campo id');",
+              "if (pm.response.code === 201) pm.variables.set('senueloId', r.id);",
+              "verificar(\"Autor del se\\u00f1uelo\", () => { pm.expect(r.autorId).to.eql(Number(pm.variables.get('adminId'))); });",
+              "}",
+              "} catch (error) { pm.execution.setNextRequest(null); pm.test('Respuesta JSON con estructura válida', () => { throw error; }); }"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "05. Leer CLOB completo",
+      "request": {
+        "method": "GET",
+        "url": "{{contenidoBaseUrl}}/api/temas/{{largoId}}",
+        "auth": {
+          "type": "noauth"
+        },
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json, application/problem+json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "function verificar(nombre, fn) { pm.test(nombre, () => { try { fn(); } catch (error) { pm.execution.setNextRequest(null); throw error; } }); }",
+              "try {",
+              "verificar('HTTP 200', () => pm.response.to.have.status(200));",
+              "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); } else {",
+              "const r = pm.response.json();",
+              "verificar(\"Texto completo sin truncar\", () => { pm.expect(r.contenido).to.eql(pm.variables.get('contenidoLargo')); });",
+              "verificar(\"M\\u00e1s de 9500 caracteres\", () => { pm.expect(r.contenido.length).to.be.above(9500); });",
+              "}",
+              "} catch (error) { pm.execution.setNextRequest(null); pm.test('Respuesta JSON con estructura válida', () => { throw error; }); }"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "06. Buscar literal acentuado al final y por categoría",
+      "request": {
+        "method": "GET",
+        "url": "{{contenidoBaseUrl}}/api/temas?texto={{textoCodificado}}&categoriaId={{categoriaId}}",
+        "auth": {
+          "type": "noauth"
+        },
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json, application/problem+json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "function verificar(nombre, fn) { pm.test(nombre, () => { try { fn(); } catch (error) { pm.execution.setNextRequest(null); throw error; } }); }",
+              "try {",
+              "verificar('HTTP 200', () => pm.response.to.have.status(200));",
+              "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); } else {",
+              "const r = pm.response.json();",
+              "verificar(\"Solo coincide el texto exacto, no el se\\u00f1uelo\", () => { pm.expect(r.map(t => t.id)).to.eql([Number(pm.variables.get('largoId'))]); });",
+              "}",
+              "} catch (error) { pm.execution.setNextRequest(null); pm.test('Respuesta JSON con estructura válida', () => { throw error; }); }"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "07. La búsqueda conserva acentos",
+      "request": {
+        "method": "GET",
+        "url": "{{contenidoBaseUrl}}/api/temas?texto={{textoSinAcento}}&categoriaId={{categoriaId}}",
+        "auth": {
+          "type": "noauth"
+        },
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json, application/problem+json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "function verificar(nombre, fn) { pm.test(nombre, () => { try { fn(); } catch (error) { pm.execution.setNextRequest(null); throw error; } }); }",
+              "try {",
+              "verificar('HTTP 200', () => pm.response.to.have.status(200));",
+              "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); } else {",
+              "const r = pm.response.json();",
+              "verificar(\"Sin acento no coincide\", () => { pm.expect(r).to.eql([]); });",
+              "}",
+              "} catch (error) { pm.execution.setNextRequest(null); pm.test('Respuesta JSON con estructura válida', () => { throw error; }); }"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "08. Eliminar tema de texto largo",
+      "request": {
+        "method": "DELETE",
+        "url": "{{contenidoBaseUrl}}/api/temas/{{largoId}}",
+        "auth": {
+          "type": "noauth"
+        },
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json, application/problem+json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "function verificar(nombre, fn) { pm.test(nombre, () => { try { fn(); } catch (error) { pm.execution.setNextRequest(null); throw error; } }); }",
+              "try {",
+              "verificar('HTTP 204', () => pm.response.to.have.status(204));",
+              "if (pm.response.code !== 204) { pm.execution.setNextRequest(null); } else {",
+              "}",
+              "} catch (error) { pm.execution.setNextRequest(null); pm.test('Respuesta JSON con estructura válida', () => { throw error; }); }"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "09. Eliminar señuelo",
+      "request": {
+        "method": "DELETE",
+        "url": "{{contenidoBaseUrl}}/api/temas/{{senueloId}}",
+        "auth": {
+          "type": "noauth"
+        },
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json, application/problem+json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "function verificar(nombre, fn) { pm.test(nombre, () => { try { fn(); } catch (error) { pm.execution.setNextRequest(null); throw error; } }); }",
+              "try {",
+              "verificar('HTTP 204', () => pm.response.to.have.status(204));",
+              "if (pm.response.code !== 204) { pm.execution.setNextRequest(null); } else {",
+              "}",
+              "} catch (error) { pm.execution.setNextRequest(null); pm.test('Respuesta JSON con estructura válida', () => { throw error; }); }"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "10. Tema largo eliminado",
+      "request": {
+        "method": "GET",
+        "url": "{{contenidoBaseUrl}}/api/temas/{{largoId}}",
+        "auth": {
+          "type": "noauth"
+        },
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json, application/problem+json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "function verificar(nombre, fn) { pm.test(nombre, () => { try { fn(); } catch (error) { pm.execution.setNextRequest(null); throw error; } }); }",
+              "try {",
+              "verificar('HTTP 404', () => pm.response.to.have.status(404));",
+              "if (pm.response.code !== 404) { pm.execution.setNextRequest(null); } else {",
+              "const r = pm.response.json();",
+              "}",
+              "} catch (error) { pm.execution.setNextRequest(null); pm.test('Respuesta JSON con estructura válida', () => { throw error; }); }"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "11. Señuelo eliminado",
+      "request": {
+        "method": "GET",
+        "url": "{{contenidoBaseUrl}}/api/temas/{{senueloId}}",
+        "auth": {
+          "type": "noauth"
+        },
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json, application/problem+json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "function verificar(nombre, fn) { pm.test(nombre, () => { try { fn(); } catch (error) { pm.execution.setNextRequest(null); throw error; } }); }",
+              "try {",
+              "verificar('HTTP 404', () => pm.response.to.have.status(404));",
+              "if (pm.response.code !== 404) { pm.execution.setNextRequest(null); } else {",
+              "const r = pm.response.json();",
+              "}",
+              "} catch (error) { pm.execution.setNextRequest(null); pm.test('Respuesta JSON con estructura válida', () => { throw error; }); }"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

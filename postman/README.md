@@ -23,3 +23,11 @@ Referencias: [variables locales de Postman](https://learning.postman.com/docs/us
 El recorrido programa su parada ante estados inesperados, aserciones fallidas o respuestas JSON/estructura inválidas. El login de administrador construye su cuerpo con JSON.stringify para conservar comillas y barras de la contraseña. Esas guardas tienen ocho comprobaciones Node focalizadas compartidas entre las dos colecciones; la verificación en el sandbox real sigue pendiente.
 
 Actualización del 31 de octubre de 2026: el usuario ejecutó esta colección en el Runner real, con los servidores iniciados en perfil oracle: 66 aserciones aprobadas y cero errores/fallos visibles. Ver [evidencia del Runner](../docs/evidencias/2026-10-31-postman-contenido.md). Las menciones previas a Postman pendiente describen la preparación anterior. Persistencia tras reiniciar y comprobaciones Oracle adicionales continúan pendientes.
+
+## Comprobación adicional de CLOB en Oracle
+
+Importar [foro-contenido-oracle-clob.postman_collection.json](foro-contenido-oracle-clob.postman_collection.json) y ejecutarla completa con el mismo entorno privado de las colecciones anteriores. Son 11 solicitudes y 20 aserciones esperadas. No modifica credenciales ni crea cuentas/categorías: usa una categoría existente y publica dos temas propios temporales del administrador.
+
+El contenido supera 9500 caracteres y la coincidencia está al final, fuera del título. Un señuelo distinto comprueba que % y _ no se interpreten como comodines; también se comprueban !, mayúsculas y acentos. La lectura compara el texto completo. Al terminar borra ambos temas y consulta sus IDs para exigir 404, conservando las cantidades originales.
+
+Si la ejecución se detiene por un fallo antes de limpiar, pueden permanecer sus temas temporales. Revisar sus respuestas/IDs y eliminarlos con su autor después de diagnosticar; no borrar registros por un prefijo general. Los tokens y contraseñas permanecen solo en variables locales de esa ejecución. Requiere servidores en perfil oracle para acreditar Oracle; el control local H2 no sustituye ese resultado.

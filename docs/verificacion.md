@@ -187,3 +187,11 @@ El Runner real de contenido deja de estar pendiente; usuarios ya cuenta con evid
 ## Relaciones Oracle sin huérfanos
 
 31 de octubre de 2026: captura SQL aportada por el usuario confirma 0 temas sin categoría y 0 comentarios sin tema. Evidencia en [evidencias/2026-10-31-oracle-integridad.md](evidencias/2026-10-31-oracle-integridad.md). Restan metadatos de FK, búsqueda CLOB larga, caída de identidad sin escrituras y concurrencia/bloqueos; esta consulta no se extrapola a esos casos.
+
+## Claves foráneas Oracle y preparación de prueba CLOB
+
+31 de octubre de 2026: captura del usuario confirma FK_COMENTARIOS_TEMA ENABLED/VALIDATED/CASCADE y FK_TEMAS_CATEGORIA ENABLED/VALIDATED/NO ACTION. Evidencia en [evidencias/2026-10-31-oracle-claves-foraneas.md](evidencias/2026-10-31-oracle-claves-foraneas.md). No se extrapola a concurrencia.
+
+Se preparó colección adicional postman/foro-contenido-oracle-clob.postman_collection.json: 11 solicitudes/20 aserciones esperadas para lectura íntegra y búsqueda tras el carácter 9500, con señuelo para comodines, acentos y filtro de categoría. Crea dos temas del administrador y los elimina al terminar. No modifica Java, esquemas ni cuentas; no requiere otra instalación. La ejecución real de esta colección en Oracle sigue pendiente de evidencia del usuario.
+
+Verificación previa de la colección CLOB: JSON válido y 13 scripts JavaScript compilados. Se ejecutaron sus 11 flujos HTTP contra dos JAR locales aislados con H2: lectura íntegra, coincidencia larga, exclusión del señuelo, sensibilidad a acentos y limpieza de los dos temas comprobadas. Los scripts Postman no se ejecutaron en ese reproductor; el resultado Oracle/Runner permanece pendiente. Los servidores Oracle del usuario no se tocaron. Revisión estática independiente: sin hallazgos accionables. No cambió Java ni se repitió Maven por este cambio de artefactos. Diagnóstico local ignorado: .verificacion/clob-flujo.py y logs clob-usuarios-local.log / clob-contenido-local.log.
