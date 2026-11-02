@@ -1,14 +1,14 @@
 # Foro Contenido
 
-Backend de contenido para el sistema de foros de DSY2205, Semana 2. Aplicación Spring Boot con paquete base `cl.duoc.forocontenido`, puerto predeterminado **8082** y repositorio Git independiente.
+Microservicio REST para gestionar categorías, temas y comentarios de un foro. Aplicación Spring Boot con puerto predeterminado **8082** y repositorio Git independiente.
 
-## Estado actual
+## Funcionamiento
 
-Autenticación HTTP, CRUD de categorías, temas y comentarios, búsqueda y eliminación transaccional de temas con comentarios implementados. Las rutas requieren Bearer y contenido consulta la identidad vigente en usuarios antes de ejecutarlas. Pendientes: Oracle real, Postman y evidencia de entrega. Sin token `/` devuelve 401; con identidad válida devuelve 404 porque no hay controlador para esa ruta.
+El servicio ofrece autenticación mediante HTTP, CRUD de categorías, temas y comentarios, búsqueda y eliminación transaccional de temas con sus comentarios. Las rutas requieren Bearer y contenido consulta la identidad vigente en usuarios antes de ejecutarlas. Sin token `/` devuelve 401; con identidad válida devuelve 404 porque no hay controlador para esa ruta.
 
 Este repositorio contiene su propio pom.xml, Maven Wrapper, código, configuración y pruebas. No existe un proyecto padre del foro ni una dependencia Java o Maven hacia foro-usuarios. Se compila y arranca por separado.
 
-La identidad se verifica mediante HTTP a GET `/api/auth/me` de foro-usuarios. Contenido no emite ni descifra JWT, no necesita JWT_SECRET_BASE64 y no accede a USUARIOS. Sus tablas de categorías, temas y comentarios estarán en un esquema Oracle propio.
+La identidad se verifica mediante HTTP a GET `/api/auth/me` de foro-usuarios. Contenido no emite ni descifra JWT, no necesita JWT_SECRET_BASE64 y no accede a USUARIOS. Sus tablas de categorías, temas y comentarios se almacenan en un esquema Oracle propio.
 
 ## Requisitos y compilación
 
@@ -26,7 +26,7 @@ java -version
 
 En Linux o macOS: `sh ./mvnw clean verify`, con JDK 17 disponible. Las pruebas actuales no requieren que foro-usuarios esté iniciado.
 
-## Desarrollo local
+## Ejecución local
 
 ```powershell
 .\mvnw.cmd spring-boot:run '-Dspring-boot.run.profiles=local'
@@ -41,7 +41,7 @@ $env:USUARIOS_READ_TIMEOUT = '3s'
 .\mvnw.cmd spring-boot:run '-Dspring-boot.run.profiles=local'
 ```
 
-El perfil predeterminado es local. H2 en memoria usa una base propia, foro_contenido, y modo Oracle; los datos se pierden al detener la aplicación. Hibernate usa create-drop y la consola H2 está deshabilitada. No acredita conexión real a Oracle.
+El perfil predeterminado es local. H2 en memoria usa una base propia, foro_contenido, y modo Oracle; los datos se pierden al detener la aplicación. Hibernate usa create-drop y la consola H2 está deshabilitada. Para conservar los datos entre reinicios, usar el perfil `oracle`.
 
 Si el entorno define SPRING_PROFILES_ACTIVE, ese valor prevalece sobre el perfil predeterminado; usar el perfil explícito anterior para evitar confusiones. No activar local y oracle simultáneamente.
 
@@ -67,9 +67,9 @@ $env:ORACLE_PASSWORD = $taskCredential.GetNetworkCredential().Password
 Remove-Item Env:ORACLE_PASSWORD
 ```
 
-Servicio, ruta y usuario del ejemplo deben ajustarse a la instancia real. Oracle usa ddl-auto=validate y no ejecuta scripts automáticamente. Los scripts de database/ incluyen categorías, temas y comentarios. La conexión Oracle está pendiente de comprobación.
+Servicio, ruta y usuario del ejemplo deben ajustarse a la instancia real. Oracle usa ddl-auto=validate y no ejecuta scripts automáticamente. Los scripts de database/ incluyen categorías, temas y comentarios.
 
-No hay valores predeterminados de credenciales Oracle. Spring Boot no carga archivos .env automáticamente. Wallet, variables privadas y certificados quedan fuera de Git y de la entrega.
+No hay valores predeterminados de credenciales Oracle. Spring Boot no carga archivos .env automáticamente. Wallet, variables privadas y certificados quedan fuera del control de versiones.
 
 ## Identidad y seguridad
 
@@ -87,7 +87,7 @@ Los errores usan application/problem+json con status, title y detail, sin copiar
 
 USUARIOS_BASE_URL debe ser una URL HTTP o HTTPS sin credenciales, query ni fragmento. El cliente usa 2 segundos para conexión y 3 para lectura por defecto, configurables con las variables anteriores; deben ser mayores que cero. No sigue redirecciones ni incorpora reintentos de aplicación o caché de identidad. La respuesta de identidad se limita a 16 KiB y se valida con el contrato de cuatro campos y las restricciones de nombre/correo/rol.
 
-Cada petición vuelve a consultar usuarios. Los cambios de rol y la desactivación de cuentas se reflejan sin esperar a que expire el token. La API usa autenticación stateless; no hay sesiones, cookies de autenticación, formulario ni HTTP Basic. La cuenta en memoria predeterminada de Spring Boot está deshabilitada. No se configura CORS abierto; el alcance sigue siendo solo backend.
+Cada petición vuelve a consultar usuarios. Los cambios de rol y la desactivación de cuentas se reflejan sin esperar a que expire el token. La API usa autenticación stateless; no hay sesiones, cookies de autenticación, formulario ni HTTP Basic. La cuenta en memoria predeterminada de Spring Boot está deshabilitada. No se configura CORS abierto. El servicio expone una API REST y no incluye interfaz web.
 
 ## Categorías
 
@@ -113,7 +113,7 @@ Los nombres son únicos sin distinguir mayúsculas ni espacios exteriores, conse
 
 Scripts propios en [database/01_estructura.sql](database/01_estructura.sql) y [database/02_datos_demostracion.sql](database/02_datos_demostracion.sql). Abrirlos como **UTF-8** en el cliente SQL. Ejecutar primero la estructura y luego los datos, una sola vez sobre la tabla vacía del esquema exclusivo de contenido. El segundo script inserta cinco categorías con IDs generados; no requiere IDs de usuarios. Mantener CLAVE_NOMBRE coherente con la normalización documentada al cargar SQL manualmente. No se cargan automáticamente al arrancar; el perfil local usa H2 en memoria y pierde sus datos al reiniciar.
 
-Los scripts están preparados para Oracle, pero todavía no se han ejecutado allí. Una categoría que contiene temas no se puede eliminar (409). Publicar o mover un tema y eliminar su categoría se coordinan mediante un bloqueo de fila durante la transacción; la base conserva además la clave foránea sin borrado en cascada.
+Una categoría que contiene temas no se puede eliminar (409). Publicar o mover un tema y eliminar su categoría se coordinan mediante un bloqueo de fila durante la transacción; la base conserva además la clave foránea sin borrado en cascada.
 
 ## Temas y búsqueda
 
@@ -137,9 +137,9 @@ Usar un categoriaId existente obtenido de GET /api/categorias. Título obligator
 
 Enviar autorId, fechaCreacion, id u otros campos desconocidos produce 400. Un tema o una categoría solicitada al publicar/editar que no existe produce 404. Los ID deben ser enteros positivos (400 si son inválidos). Modificar un tema ajeno produce 403 y no cambia los datos. PUT permite mover el tema a otra categoría existente.
 
-Para buscar: `GET /api/temas?texto=java&categoriaId=1`. Ambos filtros son opcionales y se combinan con AND. El texto busca una subcadena sin distinguir mayúsculas en título o contenido completo; conserva los acentos y trata `%`, `_` y `!` como caracteres literales. Codificar los parámetros en la URL mediante el cliente HTTP. Texto ausente o en blanco no filtra; categoriaId inexistente devuelve `[]`, al igual que cualquier búsqueda sin resultados. El orden siempre es fechaCreacion descendente y, en empate, id descendente. Se devuelve la lista completa, sin paginación en este alcance.
+Para buscar: `GET /api/temas?texto=java&categoriaId=1`. Ambos filtros son opcionales y se combinan con AND. El texto busca una subcadena sin distinguir mayúsculas en título o contenido completo; conserva los acentos y trata `%`, `_` y `!` como caracteres literales. Codificar los parámetros en la URL mediante el cliente HTTP. Texto ausente o en blanco no filtra; categoriaId inexistente devuelve `[]`, al igual que cualquier búsqueda sin resultados. El orden siempre es fechaCreacion descendente y, en empate, id descendente. Se devuelve la lista completa, sin paginación.
 
-El SQL de estructura incluye TEMAS con contenido CLOB, clave foránea a CATEGORIAS y AUTOR_ID sin relación SQL con usuarios. Las operaciones SQL LOWER y LIKE sobre CLOB se eligen según la [documentación de Oracle](https://docs.oracle.com/en/database/oracle/oracle-database/21/adlob/supported-functions-and-operators.html). La búsqueda se probó en H2 incluso después del carácter 9500; su compatibilidad y persistencia reales en Oracle todavía requieren verificación.
+El SQL de estructura incluye TEMAS con contenido CLOB, clave foránea a CATEGORIAS y AUTOR_ID sin relación SQL con usuarios. Las operaciones SQL LOWER y LIKE sobre CLOB se eligen según la [documentación de Oracle](https://docs.oracle.com/en/database/oracle/oracle-database/21/adlob/supported-functions-and-operators.html).
 
 ## Comentarios y eliminación de temas
 
@@ -175,35 +175,23 @@ En el esquema Oracle exclusivo de contenido, usar un cliente configurado para **
 
 Obtener los IDs mediante GET /api/usuarios como administrador o GET /api/auth/me de cada cuenta en foro-usuarios. El script no consulta tablas de usuarios, no contiene contraseñas y no presupone IDs 1/2/3. Verificar esas cuentas antes de cargar; al no existir FK entre servicios, el esquema de contenido no comprueba sus roles o estado por SQL. Los vínculos de categorías y temas usan los IDs generados por la base. La carga 02b aborta con rollback si ocurre un error SQL en el cliente indicado.
 
-La prueba automatizada carga el SQL de datos en H2 con IDs simulados 41/73/109 y valida cantidades y relaciones. La integración HTTP de los JAR creó tres cuentas reales y dejó cinco categorías, tres temas y tres comentarios con sus IDs reales. La ejecución de los scripts y persistencia en Oracle siguen pendientes. Para demostrar eliminaciones sin quedar bajo los mínimos, crear registros adicionales para esas operaciones.
+La carga de datos de ejemplo es opcional. También se pueden crear categorías, temas y comentarios mediante la API. Para probar modificaciones y eliminaciones, utilizar registros de prueba propios.
 
-## Pruebas y documentación
+## Pruebas
 
-`AplicacionTest` activa local, inicia el contexto real y verifica SELECT 1 mediante JDBC contra H2. Los informes están en target/surefire-reports; clean verify genera el JAR ejecutable propio.
+```powershell
+.\mvnw.cmd test
+.\mvnw.cmd clean verify
+```
 
-`IdentidadHttpTest` usa un servidor HTTP local de prueba en un puerto libre, servicios reales y H2. Comprueba identidad válida, rechazo de tokens, permisos, cambios de rol, redirecciones, demoras de cabeceras/cuerpo, caída de conexión y JSON inválido. Un controlador y una tabla exclusivos de test permiten verificar que las operaciones rechazadas no escriben datos; no forman parte del JAR ni del esquema Oracle. La suite no requiere que el otro repositorio exista o esté iniciado.
+Las pruebas cubren la conexión local, validación de identidad HTTP, permisos, CRUD de categorías, temas y comentarios, búsqueda en contenido CLOB, validación JSON, unicidad, autoría, eliminación en cascada y operaciones concurrentes. También verifican la carga de los datos de ejemplo.
 
-`CategoriasApiTest` comprueba CRUD con JPA y H2, permisos mediante identidad HTTP, validación JSON, duplicados y creaciones concurrentes. También carga el SQL de demostración como UTF-8 y verifica las cinco categorías y sus acentos.
+Las pruebas de integración utilizan H2 y un servidor HTTP de identidad de prueba. No requieren Oracle ni que el servicio real de usuarios esté iniciado. Los informes se generan en `target/surefire-reports/` y `clean verify` genera el JAR ejecutable en `target/`.
 
-`TemasApiTest` comprueba CRUD, autoría e inmutabilidad de autor/fecha, búsquedas combinadas y literales, contenido CLOB largo, categorías en uso y carreras con borrado de categoría. La suite usa un servidor HTTP de identidad de prueba y no necesita el servicio real de usuarios ni su repositorio. Los resultados de la última ejecución se registran en docs/verificacion.md.
+## Base de datos y archivos locales
 
-`ComentariosApiTest` verifica CRUD, autoría, restricciones del dueño del tema/administrador ajenos, inmutabilidad, orden, cascada y rollback de un borrado fallido. Incluye publicación concurrente con un borrado pendiente del tema. `DatosDemostracionTest` carga el conjunto SQL y verifica cinco categorías, tres temas y tres comentarios con autores parametrizados. Último clean verify: 138 pruebas aprobadas.
+Las tablas pertenecen exclusivamente al esquema de contenido. AUTOR_ID guarda el identificador recibido del servicio de usuarios y no tiene una clave foránea hacia su esquema.
 
-- [Diseño y separación de servicios](docs/diseno.md).
-- [Contrato HTTP de identidad](docs/contrato-identidad.md).
-- [Plan de implementación de contenido](docs/plan-implementacion.md).
-- [Progreso del trabajo](docs/progreso.md).
-- [Verificación](docs/verificacion.md).
+Las [consultas de verificación](database/03_verificacion.sql) permiten revisar cantidades, relaciones y restricciones del esquema.
 
-Rama inicial de trabajo: desarrollo. Los repositorios remotos y su publicación se prepararán con autorización del usuario.
-
-## Preparación para Oracle y entrega
-
-La colección y entorno propios están en [postman/](postman/README.md). Las credenciales del administrador se completan solo localmente; los tokens usan variables de ejecución. Importar y ejecutar la colección completa en Collection Runner. La revisión de JSON/JavaScript y sus flujos HTTP locales ya se realizó; las aserciones de Postman real y Oracle siguen pendientes.
-
-- [Conexión, esquema y pasos de persistencia Oracle](docs/oracle-y-entrega.md).
-- [Consultas SQL de verificación sin secretos](database/03_verificacion.sql).
-- [Matriz de evidencia y pendientes](docs/matriz-cumplimiento.md).
-- [Guion conjunto de video de 8–9 minutos](docs/guion-video.md).
-
-Los esquemas y tablas Oracle no se modificaron durante esta preparación. No se han publicado remotos, generado una entrega final ni grabado/subido el video. El alcance sigue siendo exclusivamente backend en dos repositorios separados.
+El repositorio excluye compilados, cachés, variables de entorno, credenciales, Wallet y certificados. Mantener estos archivos fuera del control de versiones.
