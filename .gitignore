@@ -1,3 +1,14 @@
+/target/
+/.verification/
+/.idea/
+*.iml
+*.log
+.env
+Wallet*/
+*.jks
+*.p12
+*.sso
+
 # Compilación y herramientas
 target/
 .verificacion/

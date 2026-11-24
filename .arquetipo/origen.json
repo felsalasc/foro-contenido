@@ -1,0 +1,230 @@
+{
+  "arquetipo": "cl.duoc:foro-microservicio-archetype:1.0.0",
+  "servicio": "foro-contenido",
+  "puerto": 8082,
+  "commitDominio": "e982f3978002f5cfb5c019505ee34a179ab0ecc6",
+  "sha256PomBaseGenerado": "ACDF1A95D2761B2D257EAA9E09823681AF28FEAC81DC92F49D1984EEF2A28754",
+  "descripcion": "Base generada con Maven; dominio migrado del commit indicado. No atribuye generacion historica de Semana 2.",
+  "archivosDominio": [
+    {
+      "ruta": ".dockerignore",
+      "sha256": "19BBC1E82611231A3AD7D984923BDCE7DBF1544353215A06EB2C6D3C1B03C4E0"
+    },
+    {
+      "ruta": ".gitattributes",
+      "sha256": "BA797F9D1857EEA795DC43A641761806876265E6134B9CFDF81F22BA369BC832"
+    },
+    {
+      "ruta": "Dockerfile",
+      "sha256": "2E50AB0AE45B150FCB5E18610444ED4699B02C7D234C21A3F941E5582B1A5DE4"
+    },
+    {
+      "ruta": "README.md",
+      "sha256": "AB43C64B41C55528DF2FDB7DBB0AF58336E6FDD1A84A68395B2209FEC3DB162A"
+    },
+    {
+      "ruta": "database/01_estructura.sql",
+      "sha256": "406FEF885B2CF3C86517EE4D77D7054B14271D892273B3F1099CA371FFA3AF1E"
+    },
+    {
+      "ruta": "database/02_datos_demostracion.sql",
+      "sha256": "89DB3D34819DE5CE06BCC03C3FB6BA7CC6FE591865DFF07561D80B46C3C3E5BB"
+    },
+    {
+      "ruta": "database/02b_temas_comentarios_demostracion.sql",
+      "sha256": "B36F0EB82F000B76751A9EA9E830164D80DDF6EB67C143B6EEB7B6DEAF9997BF"
+    },
+    {
+      "ruta": "database/03_verificacion.sql",
+      "sha256": "3B2E444D66CAE2AC2452C8834A7FE29D3044D51410E0FA57A86FB032E3E4BDE3"
+    },
+    {
+      "ruta": "docker/healthcheck.sh",
+      "sha256": "5C36C3E35A969279303B9C2CF9409EE9024AC33D77C9334424EBDC55890BE591"
+    },
+    {
+      "ruta": "src/main/java/cl/duoc/forocontenido/ForoContenidoApplication.java",
+      "sha256": "9ACBE2D92936130C595FF56C4950B4DFA4A72BBCFCEEF7C4186333749B08ACE4"
+    },
+    {
+      "ruta": "src/main/java/cl/duoc/forocontenido/config/JsonConfig.java",
+      "sha256": "30704DD071486B2668A33035216A74B6560DBEBCC4E48FFF3A863C61F29D0734"
+    },
+    {
+      "ruta": "src/main/java/cl/duoc/forocontenido/config/ModeracionProperties.java",
+      "sha256": "DCC957EA740E49553504BA58845B93BC296E85ACED9DA66685C487E98471830B"
+    },
+    {
+      "ruta": "src/main/java/cl/duoc/forocontenido/config/UsuariosProperties.java",
+      "sha256": "B27FC0065D8BEA8903522567EC7FF4C53EA7C2BFA83BC309C02F95035BEBFA0C"
+    },
+    {
+      "ruta": "src/main/java/cl/duoc/forocontenido/controller/CategoriaController.java",
+      "sha256": "88A262EC2DC4BE1F9510FBB3B80C3224C6B7CF9DD6E704908AAD2E2B9E583F32"
+    },
+    {
+      "ruta": "src/main/java/cl/duoc/forocontenido/controller/ComentarioController.java",
+      "sha256": "B3D85900CF624FA402AEE5A5EF87E61C93DD217730B355C108E38B607DC4F83F"
+    },
+    {
+      "ruta": "src/main/java/cl/duoc/forocontenido/controller/ReferenciaModeracionController.java",
+      "sha256": "B3C4C186CF199EFC02B2EFFD73FDD1F5AA4D97A727BC0F9C35935E86B96775ED"
+    },
+    {
+      "ruta": "src/main/java/cl/duoc/forocontenido/controller/TemaController.java",
+      "sha256": "B7D9807897697A4CD2ABCA845EB2E031E415997E6D4716E528CC3E58460A403A"
+    },
+    {
+      "ruta": "src/main/java/cl/duoc/forocontenido/dto/CategoriaRequest.java",
+      "sha256": "71262B77EB325A0FAEEFDD4ECC3198E4229B80F37CA1F412D610A98EF80DFCCB"
+    },
+    {
+      "ruta": "src/main/java/cl/duoc/forocontenido/dto/CategoriaResponse.java",
+      "sha256": "C9C3DF90216D0DC427DD428060F001A05F61CADD5C512E74100B098D88A08BC8"
+    },
+    {
+      "ruta": "src/main/java/cl/duoc/forocontenido/dto/ComentarioRequest.java",
+      "sha256": "7C16E583998C2472C331737D346DBA04A2F4925DCB01BC74FC0D00DB214D29AE"
+    },
+    {
+      "ruta": "src/main/java/cl/duoc/forocontenido/dto/ComentarioResponse.java",
+      "sha256": "22000420FDBB5E8660BAA0E46CFB73619DFAF5A49BF239E6898848310C8492F3"
+    },
+    {
+      "ruta": "src/main/java/cl/duoc/forocontenido/dto/TemaRequest.java",
+      "sha256": "052D116FA9CD99F588758120710870AF0577F2061C019F2C12AC4CCDFD81DCFB"
+    },
+    {
+      "ruta": "src/main/java/cl/duoc/forocontenido/dto/TemaResponse.java",
+      "sha256": "37C47F624CB8863EAB0F6064D1419FE361FCEB84708A268000EDF2EE6E47B26D"
+    },
+    {
+      "ruta": "src/main/java/cl/duoc/forocontenido/exception/ApiExceptionHandler.java",
+      "sha256": "D548785D8CADC61795B203F7DFA89AC613E6BACF6C909303BA9B720067399FB5"
+    },
+    {
+      "ruta": "src/main/java/cl/duoc/forocontenido/exception/ConflictoException.java",
+      "sha256": "D745D7E393FF5FC3DF34AAB89E44BFF4F5DDCCE3928DEFC1057A2C4F54FCEC5C"
+    },
+    {
+      "ruta": "src/main/java/cl/duoc/forocontenido/exception/IdentidadNoDisponibleException.java",
+      "sha256": "3446183FB5DC8DDB1D02EC4B54F8FA097335227766A99F19E1DF3C0FE834FC53"
+    },
+    {
+      "ruta": "src/main/java/cl/duoc/forocontenido/exception/ModeracionNoDisponibleException.java",
+      "sha256": "CA1A9F1C27F14EA79D1EDD4497A464F060896A401EB6F2B5C9DB364D6E7DF495"
+    },
+    {
+      "ruta": "src/main/java/cl/duoc/forocontenido/exception/RecursoNoEncontradoException.java",
+      "sha256": "74EA9F326A05CF076A6F745D86EB8CA0DCCFFAE78DA574A621A90D15A9CBC0C2"
+    },
+    {
+      "ruta": "src/main/java/cl/duoc/forocontenido/model/Categoria.java",
+      "sha256": "D17B7DDA0C12C237223F4C883C7558F87F4FD1272C4C608CEF8D8A941D960468"
+    },
+    {
+      "ruta": "src/main/java/cl/duoc/forocontenido/model/Comentario.java",
+      "sha256": "183A548F3BFEC516CBCF35171BC108DEB4D6034D8280C89A01E413D3B5A766F1"
+    },
+    {
+      "ruta": "src/main/java/cl/duoc/forocontenido/model/Tema.java",
+      "sha256": "3F30E7B9FB2C152C72AAD832696D1D348F1D1ACCDB9A92E3D62C67C184194654"
+    },
+    {
+      "ruta": "src/main/java/cl/duoc/forocontenido/repository/CategoriaRepository.java",
+      "sha256": "3AB287E28522F199BEB29662E13C46798997795AE6427DD33BBF6B1ED3355498"
+    },
+    {
+      "ruta": "src/main/java/cl/duoc/forocontenido/repository/ComentarioRepository.java",
+      "sha256": "F2B99EEDEFB2A1CFA37708FA816ACB170AC64636FD2F8E7EAE2DD12FB1837AE3"
+    },
+    {
+      "ruta": "src/main/java/cl/duoc/forocontenido/repository/TemaRepository.java",
+      "sha256": "99C4EAFD196270818BC9F9FC152687B6E01F69BB1192AE44AB6959DE0FE8F933"
+    },
+    {
+      "ruta": "src/main/java/cl/duoc/forocontenido/security/ApiSecurityErrorWriter.java",
+      "sha256": "7E3F539CAF97D8F2327FDEA9A12AFF57B52BAF36EC941A96F4A6367F75B1C090"
+    },
+    {
+      "ruta": "src/main/java/cl/duoc/forocontenido/security/BearerTokenFilter.java",
+      "sha256": "75661F4683EF91672A8E9EBA73F1B083A0C6506EEBA2666F2541A440F0469B27"
+    },
+    {
+      "ruta": "src/main/java/cl/duoc/forocontenido/security/Identidad.java",
+      "sha256": "1A2285BAAD796413D7A277A421F24ABF0B99B08B7CB785FBA3366549AC02EAAD"
+    },
+    {
+      "ruta": "src/main/java/cl/duoc/forocontenido/security/ModeracionClient.java",
+      "sha256": "F3C4E1EA5E51852EAB95A7531916EB4CBCB710E4471D62571B4FBD602DA651CA"
+    },
+    {
+      "ruta": "src/main/java/cl/duoc/forocontenido/security/SecurityConfig.java",
+      "sha256": "D1B26915B935386D2528DF306AF09286868D9A2460184B18D9F48203A416401F"
+    },
+    {
+      "ruta": "src/main/java/cl/duoc/forocontenido/security/TokenPeticion.java",
+      "sha256": "7A573B69C41DD110DBFCBCC7679043477C8CCC616CB198B346DB51A90DDB3136"
+    },
+    {
+      "ruta": "src/main/java/cl/duoc/forocontenido/security/UsuariosClient.java",
+      "sha256": "FBEC4AC66C0E706FE4049B2FBE09B931A30BA23A65C374712867335C21A09B0E"
+    },
+    {
+      "ruta": "src/main/java/cl/duoc/forocontenido/service/CategoriaService.java",
+      "sha256": "0DCCD9ECEB48BC6AF856A8ADED0C4C2C083E393D09C3C514233DD499F759D259"
+    },
+    {
+      "ruta": "src/main/java/cl/duoc/forocontenido/service/ComentarioService.java",
+      "sha256": "45B47B14694DE8F477E4BDA780415B48A1140E8DFD1667BFAAED8F1576BF186C"
+    },
+    {
+      "ruta": "src/main/java/cl/duoc/forocontenido/service/TemaService.java",
+      "sha256": "4610A6F33B81E6060DAA6D10D240CF1E32184195E856CBF92911D1252D882D71"
+    },
+    {
+      "ruta": "src/main/resources/application-local.properties",
+      "sha256": "690FB749F21CB84ABBDF8AF505231378FC8D8CB53547E4D26019D6D3486C1A20"
+    },
+    {
+      "ruta": "src/main/resources/application-oracle.properties",
+      "sha256": "A60EB8DA3CA73839FAD5B4F461693A5DB8BF36A902FF36E95123E49D179A1D7F"
+    },
+    {
+      "ruta": "src/main/resources/application.properties",
+      "sha256": "AEC1A35363C50593B014BAAB4A78009CD85A389557ADF4D868FE4E16BB69858E"
+    },
+    {
+      "ruta": "src/test/java/cl/duoc/forocontenido/AplicacionTest.java",
+      "sha256": "E75F47EE00D0A6FDC10BBB158FD14AA66FB0D8D66568B6CFB7B812BEEA18A608"
+    },
+    {
+      "ruta": "src/test/java/cl/duoc/forocontenido/CategoriasApiTest.java",
+      "sha256": "FCA0CE7E033F06B384D05CDE04B5E422775A0C2F812B0707728E9BE2BADA257B"
+    },
+    {
+      "ruta": "src/test/java/cl/duoc/forocontenido/ComentariosApiTest.java",
+      "sha256": "78B145D1DC2523B2B2CF14F5EE9F29CB2B531C1B14CB7F7FBF25792C91EE8868"
+    },
+    {
+      "ruta": "src/test/java/cl/duoc/forocontenido/DatosDemostracionTest.java",
+      "sha256": "844E07F3D9C92F435D3F6CD8C86269AA15B8B480271C3CC94D9E021EB744A619"
+    },
+    {
+      "ruta": "src/test/java/cl/duoc/forocontenido/IdentidadHttpTest.java",
+      "sha256": "538EEC59F41908FBDAE56013C3D9D5F2B6FE7B028C5A7DEBCA362BD7267AB77F"
+    },
+    {
+      "ruta": "src/test/java/cl/duoc/forocontenido/ModeracionIntegracionTest.java",
+      "sha256": "2A331DC14E6FDDFD138B58C48609475B8866A94344B53FA98579EF183F060F4A"
+    },
+    {
+      "ruta": "src/test/java/cl/duoc/forocontenido/TemasApiTest.java",
+      "sha256": "6B857D6CD8C91F89AF4800D231B099456CBDF766848B06B0D1D71D95944FE018"
+    },
+    {
+      "ruta": "src/test/java/cl/duoc/forocontenido/support/UsuariosStub.java",
+      "sha256": "4D55508533716CE7891B12C9FDB2AA8C8028A16DBBE358C92AD6480CF983F841"
+    }
+  ]
+}
