@@ -18,12 +18,36 @@ public final class UsuariosStub implements AutoCloseable {
     public final AtomicInteger redirecciones = new AtomicInteger();
     public volatile String authorization;
     public volatile String cookie;
+    public volatile java.util.Set<Long> temasBaneados = java.util.Set.of();
+    public volatile java.util.Set<Long> comentariosBaneados = java.util.Set.of();
+    public volatile int moderacionStatus = 200;
+    public volatile String moderacionBody;
+    public volatile String moderacionTipo = "application/json";
+    public volatile long moderacionDemora;
+    public volatile String moderacionAuthorization;
+    public volatile String moderacionCookie;
+    public final AtomicInteger moderacionPeticiones = new AtomicInteger();
+    public volatile int maxLote;
     private volatile Respuesta respuesta = new Respuesta(200, USUARIO, "application/json", 0, 0, false);
 
     public UsuariosStub() throws IOException {
         server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
         server.setExecutor(executor);
         server.createContext("/api/auth/me", this::responder);
+        server.createContext("/api/moderacion/visibilidad", exchange -> {
+            moderacionPeticiones.incrementAndGet();
+            moderacionAuthorization=exchange.getRequestHeaders().getFirst("Authorization");
+            moderacionCookie=exchange.getRequestHeaders().getFirst("Cookie");
+            var mapper=new com.fasterxml.jackson.databind.ObjectMapper();
+            var body=mapper.readTree(exchange.getRequestBody());
+            var temas=new java.util.ArrayList<Long>();
+            var comentarios=new java.util.ArrayList<Long>();
+            if(body.has("temaIds")) for(var id:body.get("temaIds")) { if(temasBaneados.contains(id.longValue())) temas.add(id.longValue()); }
+            if(body.has("comentarioIds")) for(var id:body.get("comentarioIds")) { if(comentariosBaneados.contains(id.longValue())) comentarios.add(id.longValue()); }
+            maxLote=Math.max(maxLote,Math.max(body.path("temaIds").size(),body.path("comentarioIds").size()));
+            String respuesta=moderacionBody!=null?moderacionBody:mapper.writeValueAsString(java.util.Map.of("temaIds",temas,"comentarioIds",comentarios));
+            enviar(exchange,new Respuesta(moderacionStatus,respuesta,moderacionTipo,moderacionDemora,0,false));
+        });
         server.createContext("/destino-prohibido", exchange -> {
             redirecciones.incrementAndGet();
             enviar(exchange, new Respuesta(200, USUARIO, "application/json", 0, 0, false));
@@ -39,6 +63,9 @@ public final class UsuariosStub implements AutoCloseable {
         redirecciones.set(0);
         authorization = null;
         cookie = null;
+        temasBaneados=java.util.Set.of(); comentariosBaneados=java.util.Set.of(); moderacionStatus=200;
+        moderacionBody=null; moderacionTipo="application/json"; moderacionDemora=0;
+        moderacionAuthorization=null; moderacionCookie=null; moderacionPeticiones.set(0); maxLote=0;
     }
 
     public void respuesta(int status, String body) {

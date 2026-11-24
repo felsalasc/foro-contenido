@@ -14,6 +14,10 @@ import java.util.LinkedHashMap;
 
 @RestControllerAdvice
 public class ApiExceptionHandler {
+    @ExceptionHandler(ModeracionNoDisponibleException.class)
+    public ResponseEntity<ProblemDetail> moderacion() {
+        return error(HttpStatus.SERVICE_UNAVAILABLE, "Servicio no disponible", "No se pudo comprobar la moderación; intente nuevamente más tarde");
+    }
     @ExceptionHandler(RecursoNoEncontradoException.class)
     public ResponseEntity<ProblemDetail> noEncontrado(RecursoNoEncontradoException ex) {
         return error(HttpStatus.NOT_FOUND, "Recurso no encontrado", ex.getMessage());

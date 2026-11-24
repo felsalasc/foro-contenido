@@ -40,6 +40,7 @@ class ComentariosApiTest {
     }
     @DynamicPropertySource static void properties(DynamicPropertyRegistry registry) {
         registry.add("usuarios.base-url", usuarios::baseUrl);
+        registry.add("moderacion.base-url", usuarios::baseUrl);
         registry.add("spring.datasource.url", () -> "jdbc:h2:mem:comentarios_test;MODE=Oracle;DB_CLOSE_DELAY=-1");
     }
     @BeforeEach void reset() throws Exception {

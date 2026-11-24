@@ -44,6 +44,7 @@ public class BearerTokenFilter extends OncePerRequestFilter {
         }
         try {
             Identidad identidad = usuarios.obtener(token);
+            TokenPeticion.guardar(request, token);
             var authentication = new UsernamePasswordAuthenticationToken(identidad, null,
                     List.of(new SimpleGrantedAuthority("ROLE_" + identidad.rol())));
             var context = SecurityContextHolder.createEmptyContext();

@@ -45,6 +45,7 @@ class IdentidadHttpTest {
     @DynamicPropertySource
     static void properties(DynamicPropertyRegistry registry) {
         registry.add("usuarios.base-url", usuarios::baseUrl);
+        registry.add("moderacion.base-url", usuarios::baseUrl);
         registry.add("usuarios.connect-timeout", () -> "500ms");
         registry.add("usuarios.read-timeout", () -> "500ms");
     }

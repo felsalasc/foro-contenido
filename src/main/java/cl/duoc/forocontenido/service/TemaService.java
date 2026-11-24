@@ -2,8 +2,10 @@ package cl.duoc.forocontenido.service;
 
 import cl.duoc.forocontenido.dto.*;
 import cl.duoc.forocontenido.exception.RecursoNoEncontradoException;
+import cl.duoc.forocontenido.exception.ConflictoException;
 import cl.duoc.forocontenido.model.*;
 import cl.duoc.forocontenido.repository.*;
+import cl.duoc.forocontenido.security.ModeracionClient;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,10 +17,14 @@ import java.util.Locale;
 public class TemaService {
     private final TemaRepository temas;
     private final CategoriaRepository categorias;
+    private final ModeracionClient moderacion;
+    private final ComentarioRepository comentarios;
 
-    public TemaService(TemaRepository temas, CategoriaRepository categorias) {
+    public TemaService(TemaRepository temas, CategoriaRepository categorias, ModeracionClient moderacion, ComentarioRepository comentarios) {
         this.temas = temas;
         this.categorias = categorias;
+        this.moderacion = moderacion;
+        this.comentarios = comentarios;
     }
     public List<TemaResponse> buscar(String texto, Long categoriaId) {
         if (categoriaId != null) validarId(categoriaId);
@@ -31,9 +37,14 @@ public class TemaService {
             String patron = "%" + termino.toLowerCase(Locale.ROOT).replace("!", "!!").replace("%", "!%").replace("_", "!_") + "%";
             resultados = categoriaId == null ? temas.buscarTexto(patron) : temas.buscarTextoYCategoria(patron, categoriaId);
         }
-        return resultados.stream().map(TemaResponse::de).toList();
+        var bloqueados = moderacion.bloqueados(resultados.stream().map(Tema::getId).toList(), List.of()).temaIds();
+        return resultados.stream().filter(t -> !bloqueados.contains(t.getId())).map(TemaResponse::de).toList();
     }
-    public TemaResponse obtener(Long id) { return TemaResponse.de(buscarTema(id)); }
+    public TemaResponse obtener(Long id) {
+        var tema = buscarTema(id);
+        moderacion.exigirVisible(id, null);
+        return TemaResponse.de(tema);
+    }
 
     @Transactional
     public TemaResponse crear(TemaRequest request, Long autorId) {
@@ -44,6 +55,7 @@ public class TemaService {
     @Transactional
     public TemaResponse actualizar(Long id, TemaRequest request, Long autorId) {
         var tema = buscarTema(id);
+        moderacion.exigirVisible(id, null);
         exigirAutor(tema, autorId);
         var categoria = buscarCategoria(request.categoriaId());
         tema.actualizar(request.titulo(), request.contenido(), categoria);
@@ -55,7 +67,11 @@ public class TemaService {
     public void eliminar(Long id, Long autorId) {
         validarId(id);
         var tema = temas.buscarConBloqueo(id).orElseThrow(() -> new RecursoNoEncontradoException("Tema no encontrado"));
+        var bloqueados = moderacion.bloqueados(List.of(id), comentarios.idsPorTema(id));
+        if (bloqueados.temaIds().contains(id)) throw new RecursoNoEncontradoException("Recurso no encontrado");
         exigirAutor(tema, autorId);
+        if (!bloqueados.comentarioIds().isEmpty())
+            throw new ConflictoException("El tema contiene comentarios protegidos por moderación");
         // La FK elimina los comentarios en la misma sentencia/transacción.
         temas.delete(tema);
         temas.flush();

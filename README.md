@@ -28,6 +28,33 @@ En Linux o macOS: `sh ./mvnw clean verify`, con JDK 17 disponible. Las pruebas a
 
 ## Ejecución local
 
+### Moderación de la semana 5
+
+Esta versión consulta `foro-moderacion` por HTTP para decidir la visibilidad de
+temas y comentarios. Iniciar también ese proyecto, ubicado en
+`SEMANA 5/foro-moderacion`, y configurar `MODERACION_BASE_URL` (por defecto
+`http://localhost:8083`). Los timeouts se ajustan con
+`MODERACION_CONNECT_TIMEOUT` (2s) y `MODERACION_READ_TIMEOUT` (3s).
+
+Banear oculta el recurso sin borrarlo y bloquea las modificaciones de su autor.
+Un tema baneado oculta también sus comentarios, incluso por ID directo, e impide
+nuevas respuestas. Restaurar el tema no restaura comentarios baneados por separado.
+Un tema visible que contiene un comentario baneado no puede borrarse (409), para
+evitar que la cascada elimine datos protegidos que luego deban restaurarse.
+Las rutas normales devuelven 404 para contenido oculto. Si moderación falla,
+las operaciones que necesitan comprobar visibilidad devuelven 503 sin modificar
+datos; categorías y el arranque del servicio no requieren moderación.
+
+Los endpoints administrativos `GET /api/interno/moderacion/temas/{id}` y
+`GET /api/interno/moderacion/comentarios/{id}` devuelven solo `id` y `temaId`.
+Exigen ADMINISTRADOR y no consultan visibilidad, evitando llamadas recursivas.
+No permiten editar ni eliminar contenido ajeno. Las decisiones se toman y
+persisten en moderación, sin cambios al esquema Oracle de contenido.
+
+Las pruebas de temas/comentarios incluyen un servidor HTTP de moderación de
+prueba y no necesitan el proceso real. La prueba conjunta de los tres procesos
+está en `foro-moderacion/scripts/smoke-local.ps1`.
+
 ```powershell
 .\mvnw.cmd spring-boot:run '-Dspring-boot.run.profiles=local'
 ```

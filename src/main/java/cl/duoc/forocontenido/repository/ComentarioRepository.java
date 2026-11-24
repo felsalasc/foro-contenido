@@ -8,6 +8,8 @@ import java.util.List;
 import java.util.Optional;
 
 public interface ComentarioRepository extends JpaRepository<Comentario, Long> {
+    @Query("select c.id from Comentario c where c.tema.id = :temaId order by c.id")
+    List<Long> idsPorTema(@Param("temaId") Long temaId);
     List<Comentario> findByTema_IdOrderByFechaCreacionAscIdAsc(Long temaId);
 
     // Proyección: evita cargar una entidad que pudiera quedar obsoleta mientras
